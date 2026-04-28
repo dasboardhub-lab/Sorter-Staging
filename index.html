@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner AWB Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-4 min-h-screen">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-5 space-y-6">
+        <h1 class="text-2xl font-bold text-center text-blue-600">Scanner AWB Cloud</h1>
+
+        <div class="space-y-2 border-b border-gray-200 pb-4">
+            <label class="block text-sm font-semibold">1. Kelola Database (Admin)</label>
+            <input type="password" id="adminPassword" class="w-full text-sm border p-2 rounded border-gray-300 mb-2" placeholder="Masukkan Password Admin">
+            <button id="deleteDbBtn" class="w-full bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg font-bold text-sm mb-2">Hapus Semua Data</button>
+            <input type="file" id="csvFileInput" accept=".csv" class="w-full text-sm border p-2 rounded border-gray-300">
+            <p id="uploadStatus" class="text-xs text-gray-500 font-medium"></p>
+        </div>
+
+        <div class="space-y-2">
+            <label class="block text-sm font-semibold">2. Scan Barcode AWB</label>
+            <button id="startScanBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
+                Buka Kamera Scanner
+            </button>
+            <div id="reader" class="hidden rounded-lg overflow-hidden border border-gray-200 shadow-sm mt-2"></div>
+        </div>
+
+        <div class="space-y-2">
+            <label class="block text-sm font-semibold">Ketik Manual</label>
+            <div class="flex gap-2">
+                <input type="text" id="manualAwbInput" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Masukkan Nomor AWB">
+                <button id="searchBtn" class="bg-gray-800 hover:bg-gray-900 text-white px-5 rounded-lg font-bold">Cari</button>
+            </div>
+            <p id="searchStatus" class="text-xs text-blue-600 font-medium hidden">Mencari data di database...</p>
+        </div>
+
+        <div id="resultCard" class="hidden bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm space-y-3">
+            <h2 class="font-bold text-lg border-b border-blue-200 pb-2">Detail Pengiriman</h2>
+            <div id="resultContent" class="text-sm space-y-2">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://qtsjehqdakvmmmnyuzda.supabase.co/rest/v1/awb_data';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0c2plaHFkYWt2bW1tbnl1emRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc4NzksImV4cCI6MjA5MDYyMzg3OX0.zeWEZw4Pw3dWqZpwRZFXnUHvDd_sMamSI9jRQquQPB8';
+        
+        const headers = {
+            'apikey': supabaseKey,
+            'Authorization': 'Bearer ' + supabaseKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+        };
+
+        let html5QrCode = null;
+
+        const adminPassword = document.getElementById('adminPassword');
+        const deleteDbBtn = document.getElementById('deleteDbBtn');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const startScanBtn = document.getElementById('startScanBtn');
+        const readerDiv = document.getElementById('reader');
+        const resultCard = document.getElementById('resultCard');
+        const resultContent = document.getElementById('resultContent');
+        const manualAwbInput = document.getElementById('manualAwbInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchStatus = document.getElementById('searchStatus');
+
+        deleteDbBtn.addEventListener('click', async function() {
+            if (adminPassword.value !== '123') {
+                uploadStatus.textContent = "Password salah.";
+                uploadStatus.className = "text-xs text-red-600 font-medium";
+                return;
+            }
+            
+            uploadStatus.textContent = "Menghapus data...";
+            uploadStatus.className = "text-xs text-blue-600 font-medium";
+            
+            try {
+                const response = await fetch(`${supabaseUrl}?awb_no=not.is.null`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (!response.ok) throw new Error("Gagal hapus");
+                
+                uploadStatus.textContent = "Semua data berhasil dihapus.";
+                uploadStatus.className = "text-xs text-green-600 font-medium";
+            } catch (error) {
+                uploadStatus.textContent = "Gagal menghapus data.";
+                uploadStatus.className = "text-xs text-red-600 font-medium";
+            }
+        });
+
+        csvFileInput.addEventListener('change', function(event) {
+            if (adminPassword.value !== '123') {
+                uploadStatus.textContent = "Password salah.";
+                uploadStatus.className = "text-xs text-red-600 font-medium";
+                csvFileInput.value = '';
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            uploadStatus.textContent = "Membaca file CSV...";
+            uploadStatus.className = "text-xs text-blue-600 font-medium";
+            csvFileInput.disabled = true;
+
+            Papa.parse(file, {
+                header: true,
+                delimiter: "|", 
+                skipEmptyLines: true,
+                complete: async function(results) {
+                    uploadStatus.textContent = "Mengunggah data ke database. Mohon tunggu...";
+                    
+                    const payload = results.data
+                        .filter(row => row.awb_no)
+                        .map(row => ({
+                            awb_no: row.awb_no.trim(),
+                            status_sla: row.status_sla || '',
+                            receiver_name: row.receiver_name || '',
+                            receiver_address: row.receiver_address || '',
+                            city_origin: row.city_origin || '',
+                            city_delivery: row.city_delivery || '',
+                            produk: row.produk || ''
+                        }));
+
+                    try {
+                        await uploadDataKeSupabase(payload);
+                        uploadStatus.textContent = `Berhasil menyimpan ${payload.length} data ke database.`;
+                        uploadStatus.className = "text-xs text-green-600 font-medium";
+                    } catch (error) {
+                        uploadStatus.textContent = "Gagal mengunggah ke database. Pastikan tabel awb_data sudah dibuat.";
+                        uploadStatus.className = "text-xs text-red-600 font-medium";
+                    }
+                    csvFileInput.disabled = false;
+                },
+                error: function() {
+                    uploadStatus.textContent = "Gagal membaca file CSV.";
+                    uploadStatus.className = "text-xs text-red-600 font-medium";
+                    csvFileInput.disabled = false;
+                }
+            });
+        });
+
+        async function uploadDataKeSupabase(dataArray) {
+            const chunkSize = 500;
+            for (let i = 0; i < dataArray.length; i += chunkSize) {
+                const chunk = dataArray.slice(i, i + chunkSize);
+                const response = await fetch(supabaseUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(chunk)
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Gagal mengunggah data");
+                }
+            }
+        }
+
+        startScanBtn.addEventListener('click', function() {
+            if (html5QrCode) {
+                hentikanScanner();
+                return;
+            }
+            mulaiScanner();
+        });
+
+        searchBtn.addEventListener('click', function() {
+            const awb = manualAwbInput.value.trim();
+            if (awb) cariDataDiDatabase(awb);
+        });
+
+        function mulaiScanner() {
+            readerDiv.classList.remove('hidden');
+            startScanBtn.textContent = "Tutup Kamera";
+            startScanBtn.classList.replace('bg-blue-500', 'bg-red-500');
+            startScanBtn.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
+
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                function(decodedText) {
+                    hentikanScanner();
+                    const awb = decodedText.trim();
+                    manualAwbInput.value = awb;
+                    cariDataDiDatabase(awb);
+                },
+                function(errorMessage) {
+                }
+            ).catch(function() {
+                readerDiv.innerHTML = `<p class="p-4 text-red-500 text-center font-bold">Gagal mengakses kamera.</p>`;
+                hentikanScanner();
+            });
+        }
+
+        function hentikanScanner() {
+            if (html5QrCode) {
+                try {
+                    // Mencegah error jika scanner belum sepenuhnya berjalan tapi sudah disuruh berhenti
+                    html5QrCode.stop().then(() => {
+                        bersihkanUI();
+                    }).catch(() => {
+                        bersihkanUI();
+                    });
+                } catch (err) {
+                    // Menangkap error "Cannot stop, scanner is not running or paused."
+                    bersihkanUI();
+                }
+            }
+        }
+
+        function bersihkanUI() {
+            if (html5QrCode) {
+                try { html5QrCode.clear(); } catch(e) {}
+                html5QrCode = null;
+            }
+            readerDiv.classList.add('hidden');
+            startScanBtn.textContent = "Buka Kamera Scanner";
+            startScanBtn.classList.replace('bg-red-500', 'bg-blue-500');
+            startScanBtn.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
+        }
+
+        async function cariDataDiDatabase(awb) {
+            searchStatus.classList.remove('hidden');
+            resultCard.classList.add('hidden');
+            searchBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${supabaseUrl}?awb_no=eq.${awb}&select=*`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (!response.ok) throw new Error("Gagal mengambil data");
+                
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    tampilkanHasil(data[0]);
+                } else {
+                    tampilkanHasil(null, awb);
+                }
+            } catch (error) {
+                resultContent.innerHTML = `<p class="text-red-600 font-medium text-center py-4">Terjadi kesalahan jaringan atau database.</p>`;
+                resultCard.classList.remove('hidden');
+            } finally {
+                searchStatus.classList.add('hidden');
+                searchBtn.disabled = false;
+            }
+        }
+
+        function tampilkanHasil(data, awb) {
+            resultCard.classList.remove('hidden');
+
+            if (data) {
+                resultContent.innerHTML = `
+                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2">
+                        <span class="text-gray-500 font-medium">No AWB</span>
+                        <span class="font-bold col-span-2 text-gray-900">${data.awb_no}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
+                        <span class="text-gray-500 font-medium">Status</span>
+                        <span class="font-bold col-span-2 text-blue-700">${data.status_sla || '-'}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
+                        <span class="text-gray-500 font-medium">Penerima</span>
+                        <span class="col-span-2 text-gray-800">${data.receiver_name || '-'}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
+                        <span class="text-gray-500 font-medium">Alamat</span>
+                        <span class="col-span-2 text-gray-800">${data.receiver_address || '-'}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
+                        <span class="text-gray-500 font-medium">Rute</span>
+                        <span class="col-span-2 text-gray-800">${data.city_origin || '-'} ke ${data.city_delivery || '-'}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 pt-2">
+                        <span class="text-gray-500 font-medium">Produk</span>
+                        <span class="col-span-2 text-gray-800">${data.produk || '-'}</span>
+                    </div>
+                `;
+            } else {
+                resultContent.innerHTML = `<p class="text-red-600 font-medium text-center py-4">Data AWB ${awb} tidak ditemukan di database.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
