@@ -195,20 +195,14 @@
                             kode_booking: row.kode_booking ? row.kode_booking.trim() : '',
                             fop_code_internal: row.fop_code_internal || '',
                             destination_uz: row.destination_uz || '',
-                            expect_delivery_tm: row.expect_delivery_tm || '',
-                            status_sla: row.status_sla || '',
-                            receiver_name: row.receiver_name || '',
-                            receiver_address: row.receiver_address || '',
-                            city_origin: row.city_origin || '',
-                            city_delivery: row.city_delivery || '',
-                            produk: row.produk || ''
+                            expect_delivery_tm: row.expect_delivery_tm || ''
                         }));
 
                     try {
                         await uploadDataKeSupabase(payload);
                         showUploadAlert(`Berhasil menyimpan ${payload.length} data`, "success");
                     } catch (error) {
-                        showUploadAlert("Gagal mengunggah ke database", "error");
+                        showUploadAlert(`Gagal: ${error.message}`, "error");
                     }
                     csvFileInput.disabled = false;
                 },
@@ -230,7 +224,8 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error("Gagal mengunggah data");
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Gagal unggah ke server");
                 }
             }
         }
@@ -392,24 +387,6 @@
                                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Destinasi UZ</p>
                                 <p class="font-semibold text-slate-800">${data.destination_uz || '-'}</p>
                             </div>
-                        </div>
-
-                        <div class="border-t border-slate-100 pt-4 flex items-center gap-3">
-                            <div class="flex-1">
-                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Asal</p>
-                                <p class="font-semibold text-slate-800">${data.city_origin || '-'}</p>
-                            </div>
-                            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-400"></i>
-                            <div class="flex-1 text-right">
-                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tujuan</p>
-                                <p class="font-semibold text-slate-800">${data.city_delivery || '-'}</p>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-slate-100 pt-4">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Penerima</p>
-                            <p class="font-semibold text-slate-800">${data.receiver_name || '-'}</p>
-                            <p class="text-sm text-slate-600 mt-1 leading-relaxed">${data.receiver_address || '-'}</p>
                         </div>
                     </div>
                 `;
