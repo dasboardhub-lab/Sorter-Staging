@@ -319,7 +319,8 @@
             searchBtn.disabled = true;
 
             try {
-                const response = await fetch(`${supabaseUrl}?or=(awb_no.eq.${awb},kode_booking.eq.${awb})&select=*`, {
+                const encodedAwb = encodeURIComponent(awb);
+                const response = await fetch(`${supabaseUrl}?or=(awb_no.eq.${encodedAwb},kode_booking.eq.${encodedAwb})&select=*`, {
                     method: 'GET',
                     headers: headers
                 });
@@ -406,7 +407,7 @@
                 resultContent.innerHTML = `
                     <div class="text-center py-6">
                         <i data-lucide="file-question" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
-                        <p class="text-slate-600 font-medium">Data AWB <span class="text-slate-900 font-bold">${awb}</span> tidak ditemukan.</p>
+                        <p class="text-slate-600 font-medium">Data <span class="text-slate-900 font-bold">${awb}</span> tidak ditemukan.</p>
                     </div>`;
             }
             lucide.createIcons();
