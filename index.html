@@ -7,44 +7,108 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans p-4 min-h-screen">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-5 space-y-6">
-        <h1 class="text-2xl font-bold text-center text-blue-600">Scanner AWB Cloud</h1>
-
-        <div class="space-y-2 border-b border-gray-200 pb-4">
-            <label class="block text-sm font-semibold">1. Kelola Database (Admin)</label>
-            <input type="password" id="adminPassword" class="w-full text-sm border p-2 rounded border-gray-300 mb-2" placeholder="Masukkan Password Admin">
-            <button id="deleteDbBtn" class="w-full bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg font-bold text-sm mb-2">Hapus Semua Data</button>
-            <input type="file" id="csvFileInput" accept=".csv" class="w-full text-sm border p-2 rounded border-gray-300">
-            <p id="uploadStatus" class="text-xs text-gray-500 font-medium"></p>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-sm font-semibold">2. Scan Barcode AWB</label>
-            <button id="startScanBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
-                Buka Kamera Scanner
-            </button>
-            <div id="reader" class="hidden rounded-lg overflow-hidden border border-gray-200 shadow-sm mt-2"></div>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-sm font-semibold">Ketik Manual</label>
-            <div class="flex gap-2">
-                <input type="text" id="manualAwbInput" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Masukkan Nomor AWB">
-                <button id="searchBtn" class="bg-gray-800 hover:bg-gray-900 text-white px-5 rounded-lg font-bold">Cari</button>
+<body class="bg-slate-100 text-slate-800 font-sans sm:p-4 min-h-screen flex justify-center items-start">
+    <div class="w-full max-w-md bg-slate-50 sm:rounded-[2rem] shadow-2xl overflow-hidden relative min-h-screen sm:min-h-[850px] flex flex-col">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 rounded-b-[2rem] shadow-lg relative z-10">
+            <div class="flex justify-between items-center text-white">
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-tight">Scanner AWB</h1>
+                    <p class="text-indigo-100 text-sm mt-1 font-medium">Sistem Pelacakan Cloud</p>
+                </div>
+                <button id="toggleAdminBtn" class="p-2 bg-white/20 rounded-full hover:bg-white/30 transition active:scale-95">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
             </div>
-            <p id="searchStatus" class="text-xs text-blue-600 font-medium hidden">Mencari data di database...</p>
         </div>
 
-        <div id="resultCard" class="hidden bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm space-y-3">
-            <h2 class="font-bold text-lg border-b border-blue-200 pb-2">Detail Pengiriman</h2>
-            <div id="resultContent" class="text-sm space-y-2">
+        <div class="p-5 flex-1 overflow-y-auto hide-scrollbar flex flex-col gap-5 relative -mt-4 pt-10">
+            
+            <!-- Admin Panel (Hidden by default) -->
+            <div id="adminPanel" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 transition-all">
+                <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <i data-lucide="database" class="w-5 h-5 text-indigo-500"></i>
+                    <h2 class="font-bold text-slate-700">Kelola Database</h2>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Password Admin</label>
+                    <input type="password" id="adminPassword" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Masukkan Password">
+                </div>
+
+                <div class="pt-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Unggah Data Baru (CSV)</label>
+                    <div class="relative">
+                        <input type="file" id="csvFileInput" accept=".csv" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                </div>
+
+                <button id="deleteDbBtn" class="w-full flex justify-center items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-xl font-bold transition active:scale-95 border border-red-100">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus Semua Data
+                </button>
+
+                <div id="uploadAlert" class="hidden p-3 rounded-xl text-sm font-medium flex items-start gap-2">
+                    <i data-lucide="info" class="w-5 h-5 shrink-0 mt-0.5"></i>
+                    <span id="uploadStatus"></span>
+                </div>
             </div>
+
+            <!-- Scanner Section -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <button id="startScanBtn" class="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-xl font-bold text-lg shadow-md transition-all active:scale-95">
+                    <i data-lucide="scan-line" class="w-6 h-6"></i>
+                    Buka Kamera Scanner
+                </button>
+                <div id="reader" class="hidden rounded-xl overflow-hidden border-2 border-slate-100 bg-black"></div>
+            </div>
+
+            <!-- Manual Search -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pencarian Manual</label>
+                <div class="flex gap-2 relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+                    </div>
+                    <input type="text" id="manualAwbInput" class="w-full bg-slate-50 border border-slate-200 pl-10 p-3.5 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nomor AWB...">
+                    <button id="searchBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-6 rounded-xl font-bold transition active:scale-95 shadow-sm">Cari</button>
+                </div>
+                <div id="searchStatus" class="hidden mt-3 flex items-center gap-2 text-indigo-600 text-sm font-medium">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mencari data...
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div id="resultCard" class="hidden bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-6">
+                <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex items-center gap-3">
+                    <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                        <i data-lucide="box" class="w-5 h-5"></i>
+                    </div>
+                    <h2 class="font-bold text-lg text-indigo-900">Detail Pengiriman</h2>
+                </div>
+                <div id="resultContent" class="p-5 space-y-4">
+                    <!-- Data will be injected here -->
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
+        // Initialize Icons
+        lucide.createIcons();
+
         const supabaseUrl = 'https://qtsjehqdakvmmmnyuzda.supabase.co/rest/v1/awb_data';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0c2plaHFkYWt2bW1tbnl1emRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc4NzksImV4cCI6MjA5MDYyMzg3OX0.zeWEZw4Pw3dWqZpwRZFXnUHvDd_sMamSI9jRQquQPB8';
         
@@ -57,9 +121,13 @@
 
         let html5QrCode = null;
 
+        // UI Elements
+        const toggleAdminBtn = document.getElementById('toggleAdminBtn');
+        const adminPanel = document.getElementById('adminPanel');
         const adminPassword = document.getElementById('adminPassword');
         const deleteDbBtn = document.getElementById('deleteDbBtn');
         const csvFileInput = document.getElementById('csvFileInput');
+        const uploadAlert = document.getElementById('uploadAlert');
         const uploadStatus = document.getElementById('uploadStatus');
         const startScanBtn = document.getElementById('startScanBtn');
         const readerDiv = document.getElementById('reader');
@@ -69,15 +137,31 @@
         const searchBtn = document.getElementById('searchBtn');
         const searchStatus = document.getElementById('searchStatus');
 
+        // Toggle Admin Panel
+        toggleAdminBtn.addEventListener('click', () => {
+            adminPanel.classList.toggle('hidden');
+        });
+
+        function showUploadAlert(message, type) {
+            uploadAlert.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-blue-50', 'text-blue-700', 'bg-green-50', 'text-green-700');
+            uploadStatus.textContent = message;
+            
+            if (type === 'error') {
+                uploadAlert.classList.add('bg-red-50', 'text-red-700');
+            } else if (type === 'process') {
+                uploadAlert.classList.add('bg-blue-50', 'text-blue-700');
+            } else if (type === 'success') {
+                uploadAlert.classList.add('bg-green-50', 'text-green-700');
+            }
+        }
+
         deleteDbBtn.addEventListener('click', async function() {
             if (adminPassword.value !== '123') {
-                uploadStatus.textContent = "Password salah.";
-                uploadStatus.className = "text-xs text-red-600 font-medium";
+                showUploadAlert("Password admin salah.", "error");
                 return;
             }
             
-            uploadStatus.textContent = "Menghapus data...";
-            uploadStatus.className = "text-xs text-blue-600 font-medium";
+            showUploadAlert("Menghapus seluruh data...", "process");
             
             try {
                 const response = await fetch(`${supabaseUrl}?awb_no=not.is.null`, {
@@ -87,18 +171,15 @@
                 
                 if (!response.ok) throw new Error("Gagal hapus");
                 
-                uploadStatus.textContent = "Semua data berhasil dihapus.";
-                uploadStatus.className = "text-xs text-green-600 font-medium";
+                showUploadAlert("Semua data berhasil dihapus.", "success");
             } catch (error) {
-                uploadStatus.textContent = "Gagal menghapus data.";
-                uploadStatus.className = "text-xs text-red-600 font-medium";
+                showUploadAlert("Gagal menghapus data dari server.", "error");
             }
         });
 
         csvFileInput.addEventListener('change', function(event) {
             if (adminPassword.value !== '123') {
-                uploadStatus.textContent = "Password salah.";
-                uploadStatus.className = "text-xs text-red-600 font-medium";
+                showUploadAlert("Password admin salah.", "error");
                 csvFileInput.value = '';
                 return;
             }
@@ -106,8 +187,7 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            uploadStatus.textContent = "Membaca file CSV...";
-            uploadStatus.className = "text-xs text-blue-600 font-medium";
+            showUploadAlert("Membaca file CSV...", "process");
             csvFileInput.disabled = true;
 
             Papa.parse(file, {
@@ -115,7 +195,7 @@
                 delimiter: "|", 
                 skipEmptyLines: true,
                 complete: async function(results) {
-                    uploadStatus.textContent = "Mengunggah data ke database. Mohon tunggu...";
+                    showUploadAlert("Mengunggah data ke database. Mohon tunggu...", "process");
                     
                     const payload = results.data
                         .filter(row => row.awb_no)
@@ -131,17 +211,14 @@
 
                     try {
                         await uploadDataKeSupabase(payload);
-                        uploadStatus.textContent = `Berhasil menyimpan ${payload.length} data ke database.`;
-                        uploadStatus.className = "text-xs text-green-600 font-medium";
+                        showUploadAlert(`Berhasil menyimpan ${payload.length} data.`, "success");
                     } catch (error) {
-                        uploadStatus.textContent = "Gagal mengunggah ke database. Pastikan tabel awb_data sudah dibuat.";
-                        uploadStatus.className = "text-xs text-red-600 font-medium";
+                        showUploadAlert("Gagal mengunggah ke database.", "error");
                     }
                     csvFileInput.disabled = false;
                 },
                 error: function() {
-                    uploadStatus.textContent = "Gagal membaca file CSV.";
-                    uploadStatus.className = "text-xs text-red-600 font-medium";
+                    showUploadAlert("Gagal membaca file CSV.", "error");
                     csvFileInput.disabled = false;
                 }
             });
@@ -176,11 +253,19 @@
             if (awb) cariDataDiDatabase(awb);
         });
 
+        manualAwbInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const awb = manualAwbInput.value.trim();
+                if (awb) cariDataDiDatabase(awb);
+            }
+        });
+
         function mulaiScanner() {
             readerDiv.classList.remove('hidden');
-            startScanBtn.textContent = "Tutup Kamera";
-            startScanBtn.classList.replace('bg-blue-500', 'bg-red-500');
-            startScanBtn.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
+            startScanBtn.innerHTML = `<i data-lucide="x-circle" class="w-6 h-6"></i> Tutup Kamera`;
+            startScanBtn.classList.replace('bg-indigo-600', 'bg-red-500');
+            startScanBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-600');
+            lucide.createIcons();
 
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
@@ -195,7 +280,8 @@
                 function(errorMessage) {
                 }
             ).catch(function() {
-                readerDiv.innerHTML = `<p class="p-4 text-red-500 text-center font-bold">Gagal mengakses kamera.</p>`;
+                readerDiv.innerHTML = `<div class="p-6 text-red-500 text-center font-bold bg-white"><i data-lucide="camera-off" class="w-8 h-8 mx-auto mb-2"></i>Gagal mengakses kamera.</div>`;
+                lucide.createIcons();
                 hentikanScanner();
             });
         }
@@ -203,14 +289,12 @@
         function hentikanScanner() {
             if (html5QrCode) {
                 try {
-                    // Mencegah error jika scanner belum sepenuhnya berjalan tapi sudah disuruh berhenti
                     html5QrCode.stop().then(() => {
                         bersihkanUI();
                     }).catch(() => {
                         bersihkanUI();
                     });
                 } catch (err) {
-                    // Menangkap error "Cannot stop, scanner is not running or paused."
                     bersihkanUI();
                 }
             }
@@ -222,9 +306,10 @@
                 html5QrCode = null;
             }
             readerDiv.classList.add('hidden');
-            startScanBtn.textContent = "Buka Kamera Scanner";
-            startScanBtn.classList.replace('bg-red-500', 'bg-blue-500');
-            startScanBtn.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
+            startScanBtn.innerHTML = `<i data-lucide="scan-line" class="w-6 h-6"></i> Buka Kamera Scanner`;
+            startScanBtn.classList.replace('bg-red-500', 'bg-indigo-600');
+            startScanBtn.classList.replace('hover:bg-red-600', 'hover:bg-indigo-700');
+            lucide.createIcons();
         }
 
         async function cariDataDiDatabase(awb) {
@@ -248,8 +333,13 @@
                     tampilkanHasil(null, awb);
                 }
             } catch (error) {
-                resultContent.innerHTML = `<p class="text-red-600 font-medium text-center py-4">Terjadi kesalahan jaringan atau database.</p>`;
                 resultCard.classList.remove('hidden');
+                resultContent.innerHTML = `
+                    <div class="text-center py-6">
+                        <i data-lucide="wifi-off" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                        <p class="text-red-600 font-medium">Terjadi kesalahan jaringan.</p>
+                    </div>`;
+                lucide.createIcons();
             } finally {
                 searchStatus.classList.add('hidden');
                 searchBtn.disabled = false;
@@ -261,34 +351,47 @@
 
             if (data) {
                 resultContent.innerHTML = `
-                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2">
-                        <span class="text-gray-500 font-medium">No AWB</span>
-                        <span class="font-bold col-span-2 text-gray-900">${data.awb_no}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
-                        <span class="text-gray-500 font-medium">Status</span>
-                        <span class="font-bold col-span-2 text-blue-700">${data.status_sla || '-'}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
-                        <span class="text-gray-500 font-medium">Penerima</span>
-                        <span class="col-span-2 text-gray-800">${data.receiver_name || '-'}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
-                        <span class="text-gray-500 font-medium">Alamat</span>
-                        <span class="col-span-2 text-gray-800">${data.receiver_address || '-'}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 border-b border-gray-200 pb-2 pt-2">
-                        <span class="text-gray-500 font-medium">Rute</span>
-                        <span class="col-span-2 text-gray-800">${data.city_origin || '-'} ke ${data.city_delivery || '-'}</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 pt-2">
-                        <span class="text-gray-500 font-medium">Produk</span>
-                        <span class="col-span-2 text-gray-800">${data.produk || '-'}</span>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nomor AWB</p>
+                            <p class="font-bold text-xl text-slate-900 tracking-tight">${data.awb_no}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</p>
+                                <p class="font-bold text-indigo-700">${data.status_sla || '-'}</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Produk</p>
+                                <p class="font-semibold text-slate-800">${data.produk || '-'}</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Penerima</p>
+                            <p class="font-semibold text-slate-800">${data.receiver_name || '-'}</p>
+                            <p class="text-sm text-slate-600 mt-1 leading-relaxed">${data.receiver_address || '-'}</p>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4 flex items-center gap-3">
+                            <div class="flex-1">
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Asal</p>
+                                <p class="font-semibold text-slate-800">${data.city_origin || '-'}</p>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-400"></i>
+                            <div class="flex-1 text-right">
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tujuan</p>
+                                <p class="font-semibold text-slate-800">${data.city_delivery || '-'}</p>
+                            </div>
+                        </div>
                     </div>
                 `;
             } else {
-                resultContent.innerHTML = `<p class="text-red-600 font-medium text-center py-4">Data AWB ${awb} tidak ditemukan di database.</p>`;
+                resultContent.innerHTML = `
+                    <div class="text-center py-6">
+                        <i data-lucide="file-question" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+                        <p class="text-slate-600 font-medium">Data AWB <span class="text-slate-900 font-bold">${awb}</span> tidak ditemukan.</p>
+                    </div>`;
             }
+            lucide.createIcons();
         }
     </script>
 </body>
