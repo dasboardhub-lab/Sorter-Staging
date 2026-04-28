@@ -354,7 +354,6 @@
             searchStatus.classList.remove('hidden');
             searchBtn.disabled = true;
 
-            // Pindah ke tab utama otomatis saat mencari
             tabScannerBtn.click();
 
             try {
@@ -388,7 +387,7 @@
 
         function tampilkanHasil(data, awb) {
             if (data) {
-                let slaText = '-';
+                let slaNumber = '-';
                 let slaColor = 'text-indigo-700';
                 
                 let awbBgClass = 'bg-indigo-50/50 border-indigo-50';
@@ -404,23 +403,21 @@
                     
                     const diffTime = expectDate - today;
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    slaNumber = diffDays;
                     
                     if (diffDays < 0) {
-                        slaText = "Terlambat " + Math.abs(diffDays) + " hari";
                         slaColor = 'text-red-600';
                         awbBgClass = 'bg-red-100 border-red-200';
                         awbTextClass = 'text-red-900';
                         awbLabelClass = 'text-red-600';
                         awbSubTextClass = 'text-red-700';
                     } else if (diffDays >= 0 && diffDays <= 1) {
-                        slaText = diffDays === 0 ? "Hari ini" : diffDays + " hari lagi";
                         slaColor = 'text-yellow-600';
                         awbBgClass = 'bg-yellow-100 border-yellow-200';
                         awbTextClass = 'text-yellow-900';
                         awbLabelClass = 'text-yellow-600';
                         awbSubTextClass = 'text-yellow-700';
                     } else {
-                        slaText = diffDays + " hari lagi";
                         slaColor = 'text-green-600';
                         awbBgClass = 'bg-green-100 border-green-200';
                         awbTextClass = 'text-green-900';
@@ -438,13 +435,18 @@
                         </div>
                         <div class="text-right shrink-0">
                             <p class="text-xs font-semibold ${awbLabelClass} uppercase tracking-wider mb-1">SLA Paket</p>
-                            <div class="bg-white/90 px-3 py-2 rounded-lg border shadow-sm">
-                                <p class="font-black text-sm sm:text-lg ${slaColor} whitespace-nowrap">${slaText}</p>
+                            <div class="bg-white/90 px-4 py-2 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+                                <p class="font-black text-xl sm:text-2xl leading-none ${slaColor}">${slaNumber}</p>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase mt-1">Hari</p>
                             </div>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm col-span-2">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Destinasi UZ</p>
+                            <p class="font-bold text-slate-800">${data.destination_uz || '-'}</p>
+                        </div>
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
                             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Target Kirim</p>
                             <p class="font-bold text-slate-800">${data.expect_delivery_tm || '-'}</p>
@@ -452,10 +454,6 @@
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
                             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">FOP Internal</p>
                             <p class="font-bold text-slate-800">${data.fop_code_internal || '-'}</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm col-span-2">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Destinasi UZ</p>
-                            <p class="font-bold text-slate-800">${data.destination_uz || '-'}</p>
                         </div>
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm col-span-2">
                             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Operator Internal</p>
@@ -472,7 +470,6 @@
             }
             lucide.createIcons();
             
-            // Fokus gulir tetap pada hasil meskipun kamera sedang terbuka
             const resultElement = document.getElementById('resultCard');
             if (resultElement) {
                 resultElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
