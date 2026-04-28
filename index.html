@@ -113,6 +113,7 @@
         };
 
         let html5QrCode = null;
+        let lastScannedAwb = '';
 
         const toggleAdminBtn = document.getElementById('toggleAdminBtn');
         const adminPanel = document.getElementById('adminPanel');
@@ -256,16 +257,23 @@
             startScanBtn.classList.replace('bg-indigo-600', 'bg-red-500');
             startScanBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-600');
             lucide.createIcons();
+            lastScannedAwb = '';
 
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.0 },
                 function(decodedText) {
-                    hentikanScanner();
                     const awb = decodedText.trim();
-                    manualAwbInput.value = awb;
-                    cariDataDiDatabase(awb);
+                    if (awb !== lastScannedAwb) {
+                        lastScannedAwb = awb;
+                        manualAwbInput.value = awb;
+                        cariDataDiDatabase(awb);
+                        
+                        setTimeout(() => {
+                            lastScannedAwb = '';
+                        }, 3000);
+                    }
                 },
                 function(errorMessage) {
                 }
