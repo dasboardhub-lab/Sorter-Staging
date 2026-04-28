@@ -287,6 +287,29 @@
             }
         });
 
+        function playBeepSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                
+                gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
         function mulaiScanner() {
             isScannerOpen = true;
             scannerContainer.classList.remove('hidden');
@@ -298,21 +321,22 @@
 
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 80 }, aspectRatio: 2.5 },
-                function(decodedText) {
-                    const awb = decodedText.trim();
-                    if (awb !== lastScannedAwb) {
-                        lastScannedAwb = awb;
-                        manualAwbInput.value = awb;
-                        cariDataDiDatabase(awb);
-                        
-                        setTimeout(() => {
-                            lastScannedAwb = '';
-                        }, 3000);
-                    }
-                },
-                function(errorMessage) {
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 80 }, aspectRatio: 2.5 },
+            function(decodedText) {
+                const awb = decodedText.trim();
+                if (awb !== lastScannedAwb) {
+                    playBeepSound();
+                    lastScannedAwb = awb;
+                    manualAwbInput.value = awb;
+                    cariDataDiDatabase(awb);
+                    
+                    setTimeout(() => {
+                        lastScannedAwb = '';
+                    }, 3000);
+                }
+            },
+            function(errorMessage) {
                 }
             ).catch(function() {
                 readerDiv.innerHTML = `<div class="p-6 text-red-500 text-center font-bold bg-white"><i data-lucide="camera-off" class="w-8 h-8 mx-auto mb-2"></i>Gagal mengakses kamera</div>`;
