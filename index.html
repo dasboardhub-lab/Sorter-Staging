@@ -172,6 +172,10 @@
             tabManual.classList.remove('hidden');
             tabScanner.classList.add('hidden');
             hentikanScanner();
+            setTimeout(() => {
+                manualAwbInput.focus();
+                manualAwbInput.select();
+            }, 100);
         });
 
         function showUploadAlert(message, type) {
@@ -312,13 +316,47 @@
 
         searchBtn.addEventListener('click', function() {
             const awb = manualAwbInput.value.trim();
-            if (awb) cariDataDiDatabase(awb);
+            if (awb) {
+                cariDataDiDatabase(awb);
+                manualAwbInput.select();
+            }
         });
 
         manualAwbInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const awb = manualAwbInput.value.trim();
-                if (awb) cariDataDiDatabase(awb);
+                if (awb) {
+                    cariDataDiDatabase(awb);
+                    manualAwbInput.select();
+                }
+            }
+        });
+
+        // Deteksi Scanner Fisik (USB/Bluetooth)
+        let barcodeBuffer = '';
+        let lastKeyTime = Date.now();
+
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            const currentTime = Date.now();
+            if (currentTime - lastKeyTime > 500) {
+                barcodeBuffer = '';
+            }
+            lastKeyTime = currentTime;
+
+            if (e.key === 'Enter') {
+                if (barcodeBuffer.length > 2) {
+                    const awb = barcodeBuffer.trim();
+                    manualAwbInput.value = awb;
+                    playBeepSound();
+                    cariDataDiDatabase(awb);
+                }
+                barcodeBuffer = '';
+            } else if (e.key.length === 1) {
+                barcodeBuffer += e.key;
             }
         });
 
