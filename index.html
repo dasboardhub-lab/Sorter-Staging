@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <div class="p-5 flex-1 overflow-y-auto hide-scrollbar flex flex-col gap-5 relative pt-4 pb-28">
+        <div class="p-5 flex-1 overflow-y-auto hide-scrollbar flex flex-col gap-4 relative pt-4 pb-10">
             
             <input type="file" id="csvFileInput" accept=".csv" class="hidden">
             <div id="uploadAlert" class="hidden p-3 rounded-xl text-sm font-medium flex items-start gap-2">
@@ -46,58 +46,42 @@
                 <span id="uploadStatus"></span>
             </div>
 
-            <div id="tabScanner">
-                <div id="resultCard" class="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-6">
-                    <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-                                <i data-lucide="box" class="w-5 h-5"></i>
-                            </div>
-                            <h2 class="font-bold text-lg text-indigo-900">Detail Pengiriman</h2>
-                        </div>
-                        <button id="startScanBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-2">
-                            <i data-lucide="scan-line" class="w-5 h-5"></i>
-                            <span class="text-sm font-bold hidden sm:block">Scan</span>
-                        </button>
-                    </div>
-
-                    <div id="scannerContainer" class="hidden bg-slate-50 p-4 border-b border-slate-100">
-                        <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full max-h-[150px] flex justify-center items-center"></div>
-                    </div>
-
-                    <div id="resultContent" class="p-4 space-y-4">
-                        <div class="text-center py-8 text-slate-400">
-                            <i data-lucide="scan-line" class="w-16 h-16 mx-auto mb-3 opacity-50"></i>
-                            <p class="font-medium text-sm">Aktifkan scanner atau cari manual<br>untuk melihat detail paket</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tabManual" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian Manual</label>
+            <!-- Bagian Pencarian Utama -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian AWB / Scan</label>
                 <div class="flex gap-2 relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
                     </div>
-                    <input type="text" id="manualAwbInput" class="w-full bg-slate-50 border border-slate-200 pl-10 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nomor AWB atau Booking">
-                    <button id="searchBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-5 rounded-xl font-bold transition active:scale-95 shadow-sm">Cari</button>
+                    <input type="text" id="manualAwbInput" class="w-full bg-slate-50 border border-slate-200 pl-10 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nomor AWB / Booking">
+                    <button id="toggleScanBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 rounded-xl transition active:scale-95 shadow-sm flex items-center justify-center shrink-0">
+                        <i data-lucide="camera" class="w-5 h-5"></i>
+                    </button>
+                    <button id="searchBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-5 rounded-xl font-bold transition active:scale-95 shadow-sm shrink-0">Cari</button>
                 </div>
                 <div id="searchStatus" class="hidden mt-3 flex items-center gap-2 text-indigo-600 text-sm font-medium">
                     <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mencari data...
                 </div>
             </div>
 
-        </div>
+            <!-- Wadah Kamera Scanner -->
+            <div id="scannerContainer" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full max-h-[150px] flex justify-center items-center"></div>
+                <p class="text-xs text-center text-slate-400 mt-3 font-medium">Arahkan kamera ke barcode resi</p>
+            </div>
 
-        <!-- Tab Melayang di Bawah -->
-        <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 p-1.5 rounded-2xl flex gap-1 shadow-2xl z-40 w-11/12 max-w-[320px]">
-            <button id="tabScannerBtn" class="flex-1 py-3 text-sm font-bold rounded-xl bg-indigo-600 text-white shadow-sm transition-all flex items-center justify-center gap-2">
-                <i data-lucide="scan" class="w-4 h-4"></i> Scanner
-            </button>
-            <button id="tabManualBtn" class="flex-1 py-3 text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
-                <i data-lucide="keyboard" class="w-4 h-4"></i> Manual
-            </button>
+            <!-- Kartu Hasil -->
+            <div id="resultCard" class="hidden bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-6">
+                <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex items-center gap-3">
+                    <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                        <i data-lucide="box" class="w-5 h-5"></i>
+                    </div>
+                    <h2 class="font-bold text-lg text-indigo-900">Detail Pengiriman</h2>
+                </div>
+                <div id="resultContent" class="p-4 space-y-4">
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -146,37 +130,14 @@
         const cancelModalBtn = document.getElementById('cancelModalBtn');
         const submitModalBtn = document.getElementById('submitModalBtn');
 
-        const tabScannerBtn = document.getElementById('tabScannerBtn');
-        const tabManualBtn = document.getElementById('tabManualBtn');
-        const tabScanner = document.getElementById('tabScanner');
-        const tabManual = document.getElementById('tabManual');
-
-        const startScanBtn = document.getElementById('startScanBtn');
+        const toggleScanBtn = document.getElementById('toggleScanBtn');
         const scannerContainer = document.getElementById('scannerContainer');
         const readerDiv = document.getElementById('reader');
+        const resultCard = document.getElementById('resultCard');
         const resultContent = document.getElementById('resultContent');
         const manualAwbInput = document.getElementById('manualAwbInput');
         const searchBtn = document.getElementById('searchBtn');
         const searchStatus = document.getElementById('searchStatus');
-
-        tabScannerBtn.addEventListener('click', () => {
-            tabScannerBtn.className = 'flex-1 py-3 text-sm font-bold rounded-xl bg-indigo-600 text-white shadow-sm transition-all flex items-center justify-center gap-2';
-            tabManualBtn.className = 'flex-1 py-3 text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2';
-            tabScanner.classList.remove('hidden');
-            tabManual.classList.add('hidden');
-        });
-
-        tabManualBtn.addEventListener('click', () => {
-            tabManualBtn.className = 'flex-1 py-3 text-sm font-bold rounded-xl bg-indigo-600 text-white shadow-sm transition-all flex items-center justify-center gap-2';
-            tabScannerBtn.className = 'flex-1 py-3 text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2';
-            tabManual.classList.remove('hidden');
-            tabScanner.classList.add('hidden');
-            hentikanScanner();
-            setTimeout(() => {
-                manualAwbInput.focus();
-                manualAwbInput.select();
-            }, 100);
-        });
 
         function showUploadAlert(message, type) {
             uploadAlert.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-blue-50', 'text-blue-700', 'bg-green-50', 'text-green-700');
@@ -306,7 +267,7 @@
             }
         }
 
-        startScanBtn.addEventListener('click', function() {
+        toggleScanBtn.addEventListener('click', function() {
             if (isScannerOpen) {
                 hentikanScanner();
             } else {
@@ -386,9 +347,9 @@
         function mulaiScanner() {
             isScannerOpen = true;
             scannerContainer.classList.remove('hidden');
-            startScanBtn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i><span class="text-sm font-bold hidden sm:block">Tutup</span>`;
-            startScanBtn.classList.replace('bg-indigo-600', 'bg-red-500');
-            startScanBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-600');
+            toggleScanBtn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i>`;
+            toggleScanBtn.classList.replace('bg-indigo-100', 'bg-red-100');
+            toggleScanBtn.classList.replace('text-indigo-700', 'text-red-700');
             lucide.createIcons();
             lastScannedAwb = '';
 
@@ -441,17 +402,16 @@
                 html5QrCode = null;
             }
             scannerContainer.classList.add('hidden');
-            startScanBtn.innerHTML = `<i data-lucide="scan-line" class="w-5 h-5"></i><span class="text-sm font-bold hidden sm:block">Scan</span>`;
-            startScanBtn.classList.replace('bg-red-500', 'bg-indigo-600');
-            startScanBtn.classList.replace('hover:bg-red-600', 'hover:bg-indigo-700');
+            toggleScanBtn.innerHTML = `<i data-lucide="camera" class="w-5 h-5"></i>`;
+            toggleScanBtn.classList.replace('bg-red-100', 'bg-indigo-100');
+            toggleScanBtn.classList.replace('text-red-700', 'text-indigo-700');
             lucide.createIcons();
         }
 
         async function cariDataDiDatabase(awb) {
             searchStatus.classList.remove('hidden');
+            resultCard.classList.add('hidden');
             searchBtn.disabled = true;
-
-            tabScannerBtn.click();
 
             try {
                 const encodedAwb = encodeURIComponent(awb);
@@ -470,6 +430,7 @@
                     tampilkanHasil(null, awb);
                 }
             } catch (error) {
+                resultCard.classList.remove('hidden');
                 resultContent.innerHTML = `
                     <div class="text-center py-6">
                         <i data-lucide="wifi-off" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
@@ -483,6 +444,8 @@
         }
 
         function tampilkanHasil(data, awb) {
+            resultCard.classList.remove('hidden');
+            
             if (data) {
                 let slaNumber = '-';
                 let slaColor = 'text-indigo-700';
