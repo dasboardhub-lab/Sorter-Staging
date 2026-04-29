@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scanner AWB Mobile</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Menggunakan Tailwind CSS statis untuk kompabilitas perangkat lama -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -12,26 +13,41 @@
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
+        .rounded-b-3xl {
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+        }
+        .sm-rounded-3xl {
+            border-radius: 1.5rem;
+        }
+        .text-xxs {
+            font-size: 0.65rem;
+        }
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans sm:p-4 min-h-screen flex justify-center items-start">
-    <div class="w-full max-w-md bg-slate-50 sm:rounded-[2rem] shadow-2xl overflow-hidden relative min-h-screen sm:min-h-[850px] flex flex-col">
+<body class="bg-gray-100 text-gray-800 font-sans sm:p-4 min-h-screen flex justify-center items-start">
+    <div class="w-full max-w-md bg-gray-50 sm-rounded-3xl shadow-2xl overflow-hidden relative flex flex-col" style="min-height: 850px;">
         
-        <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 rounded-b-[2rem] shadow-lg relative z-10">
+        <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 rounded-b-3xl shadow-lg relative z-10">
             <div class="flex justify-between items-center text-white">
                 <div>
                     <h1 class="text-2xl font-extrabold tracking-tight">Scanner AWB</h1>
                     <p class="text-indigo-100 text-sm mt-1 font-medium">Sistem Pelacakan Cloud</p>
                 </div>
                 <div class="flex gap-2">
-                    <button id="uploadIconBtn" class="p-2 bg-white/20 rounded-full hover:bg-white/30 transition active:scale-95" title="Unggah Data CSV">
+                    <button id="uploadIconBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95" title="Unggah Data CSV">
                         <i data-lucide="upload-cloud" class="w-6 h-6"></i>
                     </button>
-                    <button id="deleteIconBtn" class="p-2 bg-white/20 rounded-full hover:bg-white/30 transition active:scale-95 text-red-100 hover:text-white" title="Hapus Semua Data">
+                    <button id="deleteIconBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95 text-red-100 hover:text-white" title="Hapus Semua Data">
                         <i data-lucide="trash-2" class="w-6 h-6"></i>
                     </button>
                 </div>
@@ -42,22 +58,22 @@
             
             <input type="file" id="csvFileInput" accept=".csv" class="hidden">
             <div id="uploadAlert" class="hidden p-3 rounded-xl text-sm font-medium flex items-start gap-2">
-                <i data-lucide="info" class="w-5 h-5 shrink-0 mt-0.5"></i>
+                <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
                 <span id="uploadStatus"></span>
             </div>
 
             <!-- Bagian Pencarian Utama -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pencarian AWB / Scan</label>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pencarian AWB / Scan</label>
                 <div class="flex gap-2 relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+                        <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
                     </div>
-                    <input type="text" id="manualAwbInput" class="w-full bg-slate-50 border border-slate-200 pl-10 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nomor AWB / Booking">
-                    <button id="toggleScanBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 rounded-xl transition active:scale-95 shadow-sm flex items-center justify-center shrink-0">
+                    <input type="text" id="manualAwbInput" class="w-full bg-gray-50 border border-gray-200 pl-10 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Nomor AWB / Booking">
+                    <button id="toggleScanBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 rounded-xl transition transform active:scale-95 shadow-sm flex items-center justify-center flex-shrink-0">
                         <i data-lucide="camera" class="w-5 h-5"></i>
                     </button>
-                    <button id="searchBtn" class="bg-slate-800 hover:bg-slate-900 text-white px-5 rounded-xl font-bold transition active:scale-95 shadow-sm shrink-0">Cari</button>
+                    <button id="searchBtn" class="bg-gray-800 hover:bg-gray-900 text-white px-5 rounded-xl font-bold transition transform active:scale-95 shadow-sm flex-shrink-0">Cari</button>
                 </div>
                 <div id="searchStatus" class="hidden mt-3 flex items-center gap-2 text-indigo-600 text-sm font-medium">
                     <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mencari data...
@@ -65,13 +81,13 @@
             </div>
 
             <!-- Wadah Kamera Scanner -->
-            <div id="scannerContainer" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full max-h-[150px] flex justify-center items-center"></div>
-                <p class="text-xs text-center text-slate-400 mt-3 font-medium">Arahkan kamera ke barcode resi</p>
+            <div id="scannerContainer" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full flex justify-center items-center" style="max-height: 150px;"></div>
+                <p class="text-xs text-center text-gray-400 mt-3 font-medium">Arahkan kamera ke barcode resi</p>
             </div>
 
             <!-- Kartu Hasil -->
-            <div id="resultCard" class="hidden bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-6">
+            <div id="resultCard" class="hidden bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden mb-6">
                 <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex items-center gap-3">
                     <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
                         <i data-lucide="box" class="w-5 h-5"></i>
@@ -86,14 +102,14 @@
     </div>
 
     <!-- Custom Password Modal -->
-    <div id="passwordModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+    <div id="passwordModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl relative transform transition-all scale-95 opacity-0" id="passwordModalContent">
-            <h3 class="font-bold text-lg text-slate-900 mb-1" id="modalTitle">Masukkan Password</h3>
-            <p class="text-sm text-slate-500 mb-4" id="modalDesc">Diperlukan akses admin.</p>
-            <input type="password" id="modalPasswordInput" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition mb-4 text-center text-lg tracking-widest" placeholder="••••">
+            <h3 class="font-bold text-lg text-gray-900 mb-1" id="modalTitle">Masukkan Password</h3>
+            <p class="text-sm text-gray-500 mb-4" id="modalDesc">Diperlukan akses admin.</p>
+            <input type="password" id="modalPasswordInput" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition mb-4 text-center text-lg tracking-widest" placeholder="••••">
             <div class="flex gap-2">
-                <button id="cancelModalBtn" class="flex-1 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition active:scale-95">Batal</button>
-                <button id="submitModalBtn" class="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition active:scale-95">Lanjut</button>
+                <button id="cancelModalBtn" class="flex-1 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition transform active:scale-95">Batal</button>
+                <button id="submitModalBtn" class="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition transform active:scale-95">Lanjut</button>
             </div>
         </div>
     </div>
@@ -101,46 +117,46 @@
     <script>
         lucide.createIcons();
 
-        const supabaseUrl = 'https://qtsjehqdakvmmmnyuzda.supabase.co/rest/v1/awb_data';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0c2plaHFkYWt2bW1tbnl1emRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc4NzksImV4cCI6MjA5MDYyMzg3OX0.zeWEZw4Pw3dWqZpwRZFXnUHvDd_sMamSI9jRQquQPB8';
+        var supabaseUrl = 'https://qtsjehqdakvmmmnyuzda.supabase.co/rest/v1/awb_data';
+        var supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0c2plaHFkYWt2bW1tbnl1emRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc4NzksImV4cCI6MjA5MDYyMzg3OX0.zeWEZw4Pw3dWqZpwRZFXnUHvDd_sMamSI9jRQquQPB8';
         
-        const headers = {
+        var headers = {
             'apikey': supabaseKey,
             'Authorization': 'Bearer ' + supabaseKey,
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates'
         };
 
-        let html5QrCode = null;
-        let lastScannedAwb = '';
-        let isScannerOpen = false;
-        let currentAdminAction = null;
+        var html5QrCode = null;
+        var lastScannedAwb = '';
+        var isScannerOpen = false;
+        var currentAdminAction = null;
 
-        const uploadIconBtn = document.getElementById('uploadIconBtn');
-        const deleteIconBtn = document.getElementById('deleteIconBtn');
-        const csvFileInput = document.getElementById('csvFileInput');
-        const uploadAlert = document.getElementById('uploadAlert');
-        const uploadStatus = document.getElementById('uploadStatus');
+        var uploadIconBtn = document.getElementById('uploadIconBtn');
+        var deleteIconBtn = document.getElementById('deleteIconBtn');
+        var csvFileInput = document.getElementById('csvFileInput');
+        var uploadAlert = document.getElementById('uploadAlert');
+        var uploadStatus = document.getElementById('uploadStatus');
         
-        const passwordModal = document.getElementById('passwordModal');
-        const passwordModalContent = document.getElementById('passwordModalContent');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalDesc = document.getElementById('modalDesc');
-        const modalPasswordInput = document.getElementById('modalPasswordInput');
-        const cancelModalBtn = document.getElementById('cancelModalBtn');
-        const submitModalBtn = document.getElementById('submitModalBtn');
+        var passwordModal = document.getElementById('passwordModal');
+        var passwordModalContent = document.getElementById('passwordModalContent');
+        var modalTitle = document.getElementById('modalTitle');
+        var modalDesc = document.getElementById('modalDesc');
+        var modalPasswordInput = document.getElementById('modalPasswordInput');
+        var cancelModalBtn = document.getElementById('cancelModalBtn');
+        var submitModalBtn = document.getElementById('submitModalBtn');
 
-        const toggleScanBtn = document.getElementById('toggleScanBtn');
-        const scannerContainer = document.getElementById('scannerContainer');
-        const readerDiv = document.getElementById('reader');
-        const resultCard = document.getElementById('resultCard');
-        const resultContent = document.getElementById('resultContent');
-        const manualAwbInput = document.getElementById('manualAwbInput');
-        const searchBtn = document.getElementById('searchBtn');
-        const searchStatus = document.getElementById('searchStatus');
+        var toggleScanBtn = document.getElementById('toggleScanBtn');
+        var scannerContainer = document.getElementById('scannerContainer');
+        var readerDiv = document.getElementById('reader');
+        var resultCard = document.getElementById('resultCard');
+        var resultContent = document.getElementById('resultContent');
+        var manualAwbInput = document.getElementById('manualAwbInput');
+        var searchBtn = document.getElementById('searchBtn');
+        var searchStatus = document.getElementById('searchStatus');
 
         function showUploadAlert(message, type) {
-            uploadAlert.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-blue-50', 'text-blue-700', 'bg-green-50', 'text-green-700');
+            uploadAlert.className = 'p-3 rounded-xl text-sm font-medium flex items-start gap-2';
             uploadStatus.textContent = message;
             
             if (type === 'error') {
@@ -165,7 +181,7 @@
             }
 
             passwordModal.classList.remove('hidden');
-            setTimeout(() => {
+            setTimeout(function() {
                 passwordModalContent.classList.remove('scale-95', 'opacity-0');
                 passwordModalContent.classList.add('scale-100', 'opacity-100');
                 modalPasswordInput.focus();
@@ -175,17 +191,17 @@
         function closePasswordModal() {
             passwordModalContent.classList.remove('scale-100', 'opacity-100');
             passwordModalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
+            setTimeout(function() {
                 passwordModal.classList.add('hidden');
             }, 200);
         }
 
-        uploadIconBtn.addEventListener('click', () => openPasswordModal('upload'));
-        deleteIconBtn.addEventListener('click', () => openPasswordModal('delete'));
+        uploadIconBtn.addEventListener('click', function() { openPasswordModal('upload'); });
+        deleteIconBtn.addEventListener('click', function() { openPasswordModal('delete'); });
         cancelModalBtn.addEventListener('click', closePasswordModal);
 
-        submitModalBtn.addEventListener('click', async () => {
-            const pwd = modalPasswordInput.value;
+        submitModalBtn.addEventListener('click', function() {
+            var pwd = modalPasswordInput.value;
             if (pwd !== '123') {
                 showUploadAlert("Password admin salah.", "error");
                 closePasswordModal();
@@ -198,21 +214,23 @@
                 csvFileInput.click();
             } else if (currentAdminAction === 'delete') {
                 showUploadAlert("Menghapus seluruh data...", "process");
-                try {
-                    const response = await fetch(`${supabaseUrl}?awb_no=not.is.null`, {
-                        method: 'DELETE',
-                        headers: headers
-                    });
+                
+                fetch(supabaseUrl + '?awb_no=not.is.null', {
+                    method: 'DELETE',
+                    headers: headers
+                })
+                .then(function(response) {
                     if (!response.ok) throw new Error("Gagal hapus");
                     showUploadAlert("Semua data berhasil dihapus.", "success");
-                } catch (error) {
+                })
+                .catch(function(error) {
                     showUploadAlert("Gagal menghapus data dari server.", "error");
-                }
+                });
             }
         });
 
         csvFileInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
+            var file = event.target.files[0];
             if (!file) return;
 
             showUploadAlert("Membaca file CSV...", "process");
@@ -221,27 +239,31 @@
                 header: true,
                 delimiter: "|", 
                 skipEmptyLines: true,
-                complete: async function(results) {
+                complete: function(results) {
                     showUploadAlert("Mengunggah data ke database. Mohon tunggu...", "process");
                     
-                    const payload = results.data
-                        .filter(row => row.awb_no)
-                        .map(row => ({
-                            awb_no: row.awb_no.trim(),
-                            kode_booking: row.kode_booking ? row.kode_booking.trim() : '',
-                            fop_code_internal: row.fop_code_internal || '',
-                            destination_uz: row.destination_uz || '',
-                            expect_delivery_tm: row.expect_delivery_tm || '',
-                            nama_operator_internal: row.nama_operator_internal || ''
-                        }));
+                    var payload = results.data
+                        .filter(function(row) { return row.awb_no; })
+                        .map(function(row) {
+                            return {
+                                awb_no: row.awb_no.trim(),
+                                kode_booking: row.kode_booking ? row.kode_booking.trim() : '',
+                                fop_code_internal: row.fop_code_internal || '',
+                                destination_uz: row.destination_uz || '',
+                                expect_delivery_tm: row.expect_delivery_tm || '',
+                                nama_operator_internal: row.nama_operator_internal || ''
+                            };
+                        });
 
-                    try {
-                        await uploadDataKeSupabase(payload);
-                        showUploadAlert(`Berhasil menyimpan ${payload.length} data.`, "success");
-                    } catch (error) {
-                        showUploadAlert(`Gagal: ${error.message}`, "error");
-                    }
-                    csvFileInput.value = ''; // Reset
+                    uploadDataKeSupabase(payload)
+                        .then(function() {
+                            showUploadAlert("Berhasil menyimpan " + payload.length + " data.", "success");
+                            csvFileInput.value = '';
+                        })
+                        .catch(function(error) {
+                            showUploadAlert("Gagal: " + error.message, "error");
+                            csvFileInput.value = '';
+                        });
                 },
                 error: function() {
                     showUploadAlert("Gagal membaca file CSV.", "error");
@@ -250,21 +272,26 @@
             });
         });
 
-        async function uploadDataKeSupabase(dataArray) {
-            const chunkSize = 500;
-            for (let i = 0; i < dataArray.length; i += chunkSize) {
-                const chunk = dataArray.slice(i, i + chunkSize);
-                const response = await fetch(supabaseUrl, {
+        function uploadDataKeSupabase(dataArray) {
+            var chunkSize = 500;
+            var promises = [];
+            
+            for (var i = 0; i < dataArray.length; i += chunkSize) {
+                var chunk = dataArray.slice(i, i + chunkSize);
+                var p = fetch(supabaseUrl, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(chunk)
+                }).then(function(res) {
+                    if (!res.ok) {
+                        return res.json().then(function(err) { throw new Error(err.message || "Gagal unggah"); });
+                    }
+                    return res;
                 });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Gagal unggah ke server.");
-                }
+                promises.push(p);
             }
+            
+            return Promise.all(promises);
         }
 
         toggleScanBtn.addEventListener('click', function() {
@@ -276,7 +303,7 @@
         });
 
         searchBtn.addEventListener('click', function() {
-            const awb = manualAwbInput.value.trim();
+            var awb = manualAwbInput.value.trim();
             if (awb) {
                 cariDataDiDatabase(awb);
                 manualAwbInput.select();
@@ -285,7 +312,7 @@
 
         manualAwbInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const awb = manualAwbInput.value.trim();
+                var awb = manualAwbInput.value.trim();
                 if (awb) {
                     cariDataDiDatabase(awb);
                     manualAwbInput.select();
@@ -294,15 +321,15 @@
         });
 
         // Deteksi Scanner Fisik (USB/Bluetooth)
-        let barcodeBuffer = '';
-        let lastKeyTime = Date.now();
+        var barcodeBuffer = '';
+        var lastKeyTime = Date.now();
 
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 return;
             }
 
-            const currentTime = Date.now();
+            var currentTime = Date.now();
             if (currentTime - lastKeyTime > 500) {
                 barcodeBuffer = '';
             }
@@ -310,7 +337,7 @@
 
             if (e.key === 'Enter') {
                 if (barcodeBuffer.length > 2) {
-                    const awb = barcodeBuffer.trim();
+                    var awb = barcodeBuffer.trim();
                     manualAwbInput.value = awb;
                     playBeepSound();
                     cariDataDiDatabase(awb);
@@ -323,10 +350,11 @@
 
         function playBeepSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
+                var AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                var audioCtx = new AudioContext();
+                var oscillator = audioCtx.createOscillator();
+                var gainNode = audioCtx.createGain();
                 
                 oscillator.type = 'sine';
                 oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
@@ -340,16 +368,16 @@
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.1);
             } catch (error) {
-                console.log(error);
+                console.log("Audio not supported");
             }
         }
 
         function mulaiScanner() {
             isScannerOpen = true;
             scannerContainer.classList.remove('hidden');
-            toggleScanBtn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i>`;
-            toggleScanBtn.classList.replace('bg-indigo-100', 'bg-red-100');
-            toggleScanBtn.classList.replace('text-indigo-700', 'text-red-700');
+            toggleScanBtn.innerHTML = '<i data-lucide="x" class="w-5 h-5"></i>';
+            toggleScanBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'hover:bg-indigo-200');
+            toggleScanBtn.classList.add('bg-red-100', 'text-red-700', 'hover:bg-red-200');
             lucide.createIcons();
             lastScannedAwb = '';
 
@@ -358,22 +386,22 @@
             { facingMode: "environment" },
             { fps: 10, qrbox: { width: 250, height: 80 }, aspectRatio: 2.5 },
             function(decodedText) {
-                const awb = decodedText.trim();
+                var awb = decodedText.trim();
                 if (awb !== lastScannedAwb) {
                     playBeepSound();
                     lastScannedAwb = awb;
                     manualAwbInput.value = awb;
                     cariDataDiDatabase(awb);
                     
-                    setTimeout(() => {
+                    setTimeout(function() {
                         lastScannedAwb = '';
                     }, 3000);
                 }
             },
             function(errorMessage) {
-                }
+            }
             ).catch(function() {
-                readerDiv.innerHTML = `<div class="p-6 text-red-500 text-center font-bold bg-white"><i data-lucide="camera-off" class="w-8 h-8 mx-auto mb-2"></i>Gagal mengakses kamera.</div>`;
+                readerDiv.innerHTML = '<div class="p-6 text-red-500 text-center font-bold bg-white"><i data-lucide="camera-off" class="w-8 h-8 mx-auto mb-2"></i>Gagal mengakses kamera.</div>';
                 lucide.createIcons();
                 hentikanScanner();
             });
@@ -383,9 +411,9 @@
             isScannerOpen = false;
             if (html5QrCode) {
                 try {
-                    html5QrCode.stop().then(() => {
+                    html5QrCode.stop().then(function() {
                         bersihkanUI();
-                    }).catch(() => {
+                    }).catch(function() {
                         bersihkanUI();
                     });
                 } catch (err) {
@@ -402,67 +430,69 @@
                 html5QrCode = null;
             }
             scannerContainer.classList.add('hidden');
-            toggleScanBtn.innerHTML = `<i data-lucide="camera" class="w-5 h-5"></i>`;
-            toggleScanBtn.classList.replace('bg-red-100', 'bg-indigo-100');
-            toggleScanBtn.classList.replace('text-red-700', 'text-indigo-700');
+            toggleScanBtn.innerHTML = '<i data-lucide="camera" class="w-5 h-5"></i>';
+            toggleScanBtn.classList.remove('bg-red-100', 'text-red-700', 'hover:bg-red-200');
+            toggleScanBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'hover:bg-indigo-200');
             lucide.createIcons();
         }
 
-        async function cariDataDiDatabase(awb) {
+        function cariDataDiDatabase(awb) {
             searchStatus.classList.remove('hidden');
             resultCard.classList.add('hidden');
             searchBtn.disabled = true;
 
-            try {
-                const encodedAwb = encodeURIComponent(awb);
-                const response = await fetch(`${supabaseUrl}?or=(awb_no.eq.${encodedAwb},kode_booking.eq.${encodedAwb})&select=*`, {
-                    method: 'GET',
-                    headers: headers
-                });
-                
+            var encodedAwb = encodeURIComponent(awb);
+            
+            fetch(supabaseUrl + '?or=(awb_no.eq.' + encodedAwb + ',kode_booking.eq.' + encodedAwb + ')&select=*', {
+                method: 'GET',
+                headers: headers
+            })
+            .then(function(response) {
                 if (!response.ok) throw new Error("Gagal mengambil data");
-                
-                const data = await response.json();
-                
+                return response.json();
+            })
+            .then(function(data) {
                 if (data && data.length > 0) {
                     tampilkanHasil(data[0]);
                 } else {
                     tampilkanHasil(null, awb);
                 }
-            } catch (error) {
-                resultCard.classList.remove('hidden');
-                resultContent.innerHTML = `
-                    <div class="text-center py-6">
-                        <i data-lucide="wifi-off" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
-                        <p class="text-red-600 font-medium">Terjadi kesalahan jaringan.</p>
-                    </div>`;
-                lucide.createIcons();
-            } finally {
                 searchStatus.classList.add('hidden');
                 searchBtn.disabled = false;
-            }
+            })
+            .catch(function(error) {
+                resultCard.classList.remove('hidden');
+                resultContent.innerHTML = 
+                    '<div class="text-center py-6">' +
+                        '<i data-lucide="wifi-off" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>' +
+                        '<p class="text-red-600 font-medium">Terjadi kesalahan jaringan.</p>' +
+                    '</div>';
+                lucide.createIcons();
+                searchStatus.classList.add('hidden');
+                searchBtn.disabled = false;
+            });
         }
 
         function tampilkanHasil(data, awb) {
             resultCard.classList.remove('hidden');
             
             if (data) {
-                let slaNumber = '-';
-                let slaColor = 'text-indigo-700';
+                var slaNumber = '-';
+                var slaColor = 'text-indigo-700';
                 
-                let awbBgClass = 'bg-indigo-50/50 border-indigo-50';
-                let awbTextClass = 'text-slate-900';
-                let awbLabelClass = 'text-slate-500';
-                let awbSubTextClass = 'text-slate-600';
+                var awbBgClass = 'bg-indigo-50 bg-opacity-50 border-indigo-50';
+                var awbTextClass = 'text-gray-900';
+                var awbLabelClass = 'text-gray-500';
+                var awbSubTextClass = 'text-gray-600';
                 
                 if (data.expect_delivery_tm) {
-                    const expectDate = new Date(data.expect_delivery_tm);
-                    const today = new Date();
+                    var expectDate = new Date(data.expect_delivery_tm);
+                    var today = new Date();
                     expectDate.setHours(0, 0, 0, 0);
                     today.setHours(0, 0, 0, 0);
                     
-                    const diffTime = expectDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    var diffTime = expectDate - today;
+                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     slaNumber = diffDays;
                     
                     if (diffDays < 0) {
@@ -486,51 +516,55 @@
                     }
                 }
 
-                resultContent.innerHTML = `
-                    <div class="${awbBgClass} p-4 rounded-xl border flex justify-between items-center gap-2 mb-4">
-                        <div class="overflow-hidden">
-                            <p class="text-xs font-semibold ${awbLabelClass} uppercase tracking-wider mb-1">Nomor AWB</p>
-                            <p class="font-bold text-xl sm:text-2xl ${awbTextClass} tracking-tight truncate">${data.awb_no}</p>
-                            <p class="text-xs font-medium ${awbSubTextClass} mt-1 truncate">${data.kode_booking || 'Tanpa Booking'}</p>
-                        </div>
-                        <div class="text-right shrink-0">
-                            <p class="text-xs font-semibold ${awbLabelClass} uppercase tracking-wider mb-1">SLA Paket</p>
-                            <div class="bg-white/90 px-4 py-2 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-                                <p class="font-black text-xl sm:text-2xl leading-none ${slaColor}">${slaNumber}</p>
-                                <p class="text-[10px] font-bold text-slate-500 uppercase mt-1">Hari</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm col-span-2">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Destinasi UZ</p>
-                            <p class="font-bold text-slate-800">${data.destination_uz || '-'}</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Target Kirim</p>
-                            <p class="font-bold text-slate-800">${data.expect_delivery_tm || '-'}</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">FOP Internal</p>
-                            <p class="font-bold text-slate-800">${data.fop_code_internal || '-'}</p>
-                        </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm col-span-2">
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Operator Internal</p>
-                            <p class="font-bold text-slate-800">${data.nama_operator_internal || '-'}</p>
-                        </div>
-                    </div>
-                `;
+                var kodeBooking = data.kode_booking ? data.kode_booking : 'Tanpa Booking';
+                var targetKirim = data.expect_delivery_tm ? data.expect_delivery_tm : '-';
+                var fopInternal = data.fop_code_internal ? data.fop_code_internal : '-';
+                var destUz = data.destination_uz ? data.destination_uz : '-';
+                var operator = data.nama_operator_internal ? data.nama_operator_internal : '-';
+
+                resultContent.innerHTML = 
+                    '<div class="' + awbBgClass + ' p-4 rounded-xl border flex justify-between items-center gap-2 mb-4">' +
+                        '<div class="overflow-hidden">' +
+                            '<p class="text-xs font-semibold ' + awbLabelClass + ' uppercase tracking-wider mb-1">Nomor AWB</p>' +
+                            '<p class="font-bold text-xl sm:text-2xl ' + awbTextClass + ' tracking-tight truncate">' + data.awb_no + '</p>' +
+                            '<p class="text-xs font-medium ' + awbSubTextClass + ' mt-1 truncate">' + kodeBooking + '</p>' +
+                        '</div>' +
+                        '<div class="text-right flex-shrink-0">' +
+                            '<p class="text-xs font-semibold ' + awbLabelClass + ' uppercase tracking-wider mb-1">SLA Paket</p>' +
+                            '<div class="bg-white px-4 py-2 rounded-lg border shadow-sm flex flex-col items-center justify-center">' +
+                                '<p class="font-black text-xl sm:text-2xl leading-none ' + slaColor + '">' + slaNumber + '</p>' +
+                                '<p class="text-xxs font-bold text-gray-500 uppercase mt-1">Hari</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="grid grid-cols-2 gap-3">' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm col-span-2">' +
+                            '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Destinasi UZ</p>' +
+                            '<p class="font-bold text-gray-800">' + destUz + '</p>' +
+                        '</div>' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">' +
+                            '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Target Kirim</p>' +
+                            '<p class="font-bold text-gray-800">' + targetKirim + '</p>' +
+                        '</div>' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">' +
+                            '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">FOP Internal</p>' +
+                            '<p class="font-bold text-gray-800">' + fopInternal + '</p>' +
+                        '</div>' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm col-span-2">' +
+                            '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Operator Internal</p>' +
+                            '<p class="font-bold text-gray-800">' + operator + '</p>' +
+                        '</div>' +
+                    '</div>';
             } else {
-                resultContent.innerHTML = `
-                    <div class="text-center py-6">
-                        <i data-lucide="file-question" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
-                        <p class="text-slate-600 font-medium">Data <span class="text-slate-900 font-bold">${awb}</span> tidak ditemukan.</p>
-                    </div>`;
+                resultContent.innerHTML = 
+                    '<div class="text-center py-6">' +
+                        '<i data-lucide="file-question" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>' +
+                        '<p class="text-gray-600 font-medium">Data <span class="text-gray-900 font-bold">' + awb + '</span> tidak ditemukan.</p>' +
+                    '</div>';
             }
             lucide.createIcons();
             
-            const resultElement = document.getElementById('resultCard');
+            var resultElement = document.getElementById('resultCard');
             if (resultElement) {
                 resultElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
