@@ -304,9 +304,11 @@
             }
             dataArray.forEach(function(item) {
                 var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                var displayCount = item.count === 0 ? '' : item.count + ' (' + pct + '%)';
+                var bgClass = item.count === 0 ? 'bg-transparent' : 'bg-indigo-50';
                 html += '<div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">' +
                             '<span class="truncate pr-1 text-gray-700">' + item.name + '</span>' +
-                            '<span class="font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap">' + item.count + ' (' + pct + '%)</span>' +
+                            '<span class="font-bold text-indigo-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap ' + bgClass + '">' + displayCount + '</span>' +
                         '</div>';
             });
             document.getElementById(elementId).innerHTML = html;
@@ -318,9 +320,13 @@
             dataArray.forEach(function(item, index) {
                 var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
                 var colorClass = colors[index] || 'text-gray-700 bg-gray-50';
+                if (item.count === 0) {
+                    colorClass = 'bg-transparent';
+                }
+                var displayCount = item.count === 0 ? '' : item.count + ' (' + pct + '%)';
                 html += '<div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">' +
                             '<span class="truncate pr-1 text-gray-700">' + item.name + '</span>' +
-                            '<span class="font-bold px-1.5 py-0.5 rounded text-xs ' + colorClass + ' whitespace-nowrap">' + item.count + ' (' + pct + '%)</span>' +
+                            '<span class="font-bold px-1.5 py-0.5 rounded text-xs ' + colorClass + ' whitespace-nowrap">' + displayCount + '</span>' +
                         '</div>';
             });
             document.getElementById(elementId).innerHTML = html;
@@ -347,27 +353,33 @@
                     var val = matrixData[row][col] || 0;
                     rowTotal += val;
                     colTotals[col] += val;
-                    html += '<td class="p-1 text-center text-gray-600">' + val + '</td>';
+                    var displayVal = val === 0 ? '' : val;
+                    html += '<td class="p-1 text-center text-gray-600">' + displayVal + '</td>';
                 });
                 grandTotal += rowTotal;
-                html += '<td class="p-1 text-center font-bold text-indigo-900 bg-indigo-50">' + rowTotal + '</td>';
+                var displayRowTotal = rowTotal === 0 ? '' : rowTotal;
+                html += '<td class="p-1 text-center font-bold text-indigo-900 bg-indigo-50">' + displayRowTotal + '</td>';
                 html += '</tr>';
             });
 
             html += '<tr class="bg-indigo-100 border-t-2 border-indigo-200 sticky bottom-0 z-20"><td class="p-1 font-bold text-indigo-900 sticky left-0 bg-indigo-100 border-r border-indigo-200 z-30">Total</td>';
             colKeys.forEach(function(col) {
-                html += '<td class="p-1 text-center font-bold text-indigo-900">' + colTotals[col] + '</td>';
+                var displayColTotal = colTotals[col] === 0 ? '' : colTotals[col];
+                html += '<td class="p-1 text-center font-bold text-indigo-900">' + displayColTotal + '</td>';
             });
-            html += '<td class="p-1 text-center font-black text-indigo-900">' + grandTotal + '</td></tr>';
+            var displayGrandTotal = grandTotal === 0 ? '' : grandTotal;
+            html += '<td class="p-1 text-center font-black text-indigo-900">' + displayGrandTotal + '</td></tr>';
 
             html += '</tbody></table>';
             document.getElementById(elementId).innerHTML = html;
         }
 
-        function loadDashboardData() {
-            document.getElementById('dashTotalAwb').textContent = 'Memuat data dari server...';
+        function fetchAllData(offset, allData) {
+            var currentOffset = offset || 0;
+            var currentData = allData || [];
+            var limit = 1000;
 
-            fetch(supabaseUrl + '?select=*', {
+            return fetch(supabaseUrl + '?select=*&limit=' + limit + '&offset=' + currentOffset, {
                 method: 'GET',
                 headers: headers
             })
@@ -375,6 +387,20 @@
                 if (!response.ok) throw new Error("Gagal memuat data");
                 return response.json();
             })
+            .then(function(data) {
+                var combinedData = currentData.concat(data);
+                if (data.length === limit) {
+                    return fetchAllData(currentOffset + limit, combinedData);
+                } else {
+                    return combinedData;
+                }
+            });
+        }
+
+        function loadDashboardData() {
+            document.getElementById('dashTotalAwb').textContent = 'Memuat data dari server...';
+
+            fetchAllData()
             .then(function(data) {
                 var totalData = data.length;
                 document.getElementById('dashTotalAwb').textContent = 'Total ' + totalData + ' Resi Terdaftar';
@@ -564,14 +590,7 @@
             operatorFilter.innerHTML = '<option value="">Semua Operator</option>';
             operatorFilter.disabled = true;
 
-            fetch(supabaseUrl + '?select=*', {
-                method: 'GET',
-                headers: headers
-            })
-            .then(function(response) {
-                if (!response.ok) throw new Error("Gagal memuat data");
-                return response.json();
-            })
+            fetchAllData()
             .then(function(data) {
                 data.sort(function(a, b) {
                     var dateA = a.expect_delivery_tm ? new Date(a.expect_delivery_tm).getTime() : 9999999999999;
