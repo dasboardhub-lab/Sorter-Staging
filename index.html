@@ -44,6 +44,9 @@
                     <p class="text-indigo-100 text-sm mt-1 font-medium">Sistem Pelacakan Cloud</p>
                 </div>
                 <div class="flex gap-2">
+                    <button id="viewDataBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95" title="Lihat Tabel Data">
+                        <i data-lucide="table" class="w-6 h-6"></i>
+                    </button>
                     <button id="uploadIconBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95" title="Unggah Data CSV">
                         <i data-lucide="upload-cloud" class="w-6 h-6"></i>
                     </button>
@@ -82,7 +85,7 @@
 
             <!-- Wadah Kamera Scanner -->
             <div id="scannerContainer" class="hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full flex justify-center items-center" style="max-height: 150px;"></div>
+                <div id="reader" class="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black w-full flex justify-center items-center" style="min-height: 250px;"></div>
                 <p class="text-xs text-center text-gray-400 mt-3 font-medium">Arahkan kamera ke barcode resi</p>
             </div>
 
@@ -98,6 +101,43 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Modal Tabel Data -->
+    <div id="dataTableModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex flex-col p-2 sm:p-6 backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-3 text-white px-2 mt-2">
+            <div>
+                <h3 class="font-bold text-xl">Database AWB</h3>
+                <p class="text-xs text-gray-400" id="totalDataCount">Memuat...</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="refreshDataBtn" class="p-2 bg-white bg-opacity-10 rounded-full hover:bg-opacity-20 transition">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+                <button id="closeDataTableBtn" class="p-2 bg-red-500 bg-opacity-80 rounded-full hover:bg-opacity-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+            <div class="flex-1 overflow-auto">
+                <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
+                    <thead class="bg-indigo-50 sticky top-0 shadow-sm z-10">
+                        <tr>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">No AWB</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Kode Booking</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">SLA Target</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">FOP Internal</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Destinasi UZ</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Operator</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Baris data dimuat disini -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -131,6 +171,13 @@
         var lastScannedAwb = '';
         var isScannerOpen = false;
         var currentAdminAction = null;
+
+        var viewDataBtn = document.getElementById('viewDataBtn');
+        var dataTableModal = document.getElementById('dataTableModal');
+        var closeDataTableBtn = document.getElementById('closeDataTableBtn');
+        var refreshDataBtn = document.getElementById('refreshDataBtn');
+        var dataTableBody = document.getElementById('dataTableBody');
+        var totalDataCount = document.getElementById('totalDataCount');
 
         var uploadIconBtn = document.getElementById('uploadIconBtn');
         var deleteIconBtn = document.getElementById('deleteIconBtn');
@@ -168,6 +215,58 @@
             }
         }
 
+        // Fitur Modal Tabel Data
+        viewDataBtn.addEventListener('click', function() {
+            dataTableModal.classList.remove('hidden');
+            loadTableData();
+        });
+
+        closeDataTableBtn.addEventListener('click', function() {
+            dataTableModal.classList.add('hidden');
+        });
+
+        refreshDataBtn.addEventListener('click', loadTableData);
+
+        function loadTableData() {
+            dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Memuat data dari server...</td></tr>';
+            lucide.createIcons();
+            totalDataCount.textContent = 'Memuat...';
+
+            fetch(supabaseUrl + '?select=*&limit=500', {
+                method: 'GET',
+                headers: headers
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error("Gagal memuat data");
+                return response.json();
+            })
+            .then(function(data) {
+                totalDataCount.textContent = 'Menampilkan ' + data.length + ' baris data terbaru';
+                
+                if (data.length === 0) {
+                    dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500">Database masih kosong.</td></tr>';
+                    return;
+                }
+
+                var rows = '';
+                data.forEach(function(row) {
+                    rows += '<tr class="border-b border-gray-100 hover:bg-gray-50">' +
+                        '<td class="p-3 font-semibold text-gray-900">' + row.awb_no + '</td>' +
+                        '<td class="p-3 text-gray-600">' + (row.kode_booking || '-') + '</td>' +
+                        '<td class="p-3 text-gray-600">' + (row.expect_delivery_tm || '-') + '</td>' +
+                        '<td class="p-3 text-gray-600">' + (row.fop_code_internal || '-') + '</td>' +
+                        '<td class="p-3 text-gray-600">' + (row.destination_uz || '-') + '</td>' +
+                        '<td class="p-3 text-gray-600">' + (row.nama_operator_internal || '-') + '</td>' +
+                    '</tr>';
+                });
+                dataTableBody.innerHTML = rows;
+            })
+            .catch(function(error) {
+                dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-red-500">Gagal terhubung ke database. Periksa koneksi internet Anda.</td></tr>';
+            });
+        }
+
+        // Fitur Modal Password
         function openPasswordModal(action) {
             currentAdminAction = action;
             modalPasswordInput.value = '';
@@ -384,7 +483,16 @@
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 80 }, aspectRatio: 2.5 },
+            { 
+                fps: 10, 
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    return {
+                        width: Math.floor(viewfinderWidth * 0.9),
+                        height: 180
+                    };
+                }, 
+                aspectRatio: 1.3333 
+            },
             function(decodedText) {
                 var awb = decodedText.trim();
                 if (awb !== lastScannedAwb) {
