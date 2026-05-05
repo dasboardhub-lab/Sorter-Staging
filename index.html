@@ -514,15 +514,31 @@
                 return;
             }
 
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             var rows = '';
             dataToRender.forEach(function(row) {
-                rows += '<tr class="group border-b border-gray-100 hover:bg-gray-50">' +
-                    '<td class="p-3 font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100 z-10 group-hover:bg-gray-50">' + row.awb_no + '</td>' +
-                    '<td class="p-3 text-gray-600">' + (row.kode_booking || '-') + '</td>' +
-                    '<td class="p-3 text-gray-600">' + (row.expect_delivery_tm || '-') + '</td>' +
-                    '<td class="p-3 text-gray-600">' + (row.fop_code_internal || '-') + '</td>' +
-                    '<td class="p-3 text-gray-600">' + (row.destination_uz || '-') + '</td>' +
-                    '<td class="p-3 text-gray-600">' + (row.nama_operator_internal || '-') + '</td>' +
+                var isOverSla = false;
+                if (row.expect_delivery_tm) {
+                    var expectDate = new Date(row.expect_delivery_tm);
+                    expectDate.setHours(0, 0, 0, 0);
+                    if (expectDate < today) {
+                        isOverSla = true;
+                    }
+                }
+
+                var trClass = isOverSla ? 'group border-b border-red-200 bg-red-50 hover:bg-red-100' : 'group border-b border-gray-100 hover:bg-gray-50';
+                var tdStickyClass = isOverSla ? 'p-3 font-semibold text-red-900 sticky left-0 bg-red-50 border-r border-red-200 z-10 group-hover:bg-red-100' : 'p-3 font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100 z-10 group-hover:bg-gray-50';
+                var textClass = isOverSla ? 'p-3 text-red-800 font-medium' : 'p-3 text-gray-600';
+
+                rows += '<tr class="' + trClass + '">' +
+                    '<td class="' + tdStickyClass + '">' + row.awb_no + '</td>' +
+                    '<td class="' + textClass + '">' + (row.kode_booking || '-') + '</td>' +
+                    '<td class="' + textClass + '">' + (row.expect_delivery_tm || '-') + '</td>' +
+                    '<td class="' + textClass + '">' + (row.fop_code_internal || '-') + '</td>' +
+                    '<td class="' + textClass + '">' + (row.destination_uz || '-') + '</td>' +
+                    '<td class="' + textClass + '">' + (row.nama_operator_internal || '-') + '</td>' +
                 '</tr>';
             });
             dataTableBody.innerHTML = rows;
