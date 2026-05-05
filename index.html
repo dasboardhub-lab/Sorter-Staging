@@ -662,8 +662,8 @@
                     var payload = results.data
                         .filter(function(row) {
                             if (!row.awb_no) return false;
-                            var fop = row.fop_code_internal ? row.fop_code_internal.toString().trim().toLowerCase() : '';
-                            return fop !== '80' && fop !== 'opcode 80';
+                            var fop = row.fop_code_internal ? row.fop_code_internal.toString().trim().toLowerCase().replace('opcode ', '') : '';
+                            return fop !== '80' && fop !== '55' && fop !== '33' && fop !== '603' && fop !== '604';
                         })
                         .map(function(row) {
                             return {
