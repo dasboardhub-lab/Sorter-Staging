@@ -44,6 +44,9 @@
                     <p class="text-indigo-100 text-sm mt-1 font-medium">Sistem Pelacakan Cloud</p>
                 </div>
                 <div class="flex gap-2">
+                    <button id="dashboardBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95" title="Lihat Dashboard">
+                        <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                    </button>
                     <button id="viewDataBtn" class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition transform active:scale-95" title="Lihat Tabel Data">
                         <i data-lucide="table" class="w-6 h-6"></i>
                     </button>
@@ -104,6 +107,44 @@
         </div>
     </div>
 
+    <!-- Modal Dashboard -->
+    <div id="dashboardModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex flex-col p-2 sm:p-6 backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-3 text-white px-2 mt-2">
+            <div>
+                <h3 class="font-bold text-xl">Dashboard Analitik</h3>
+                <p class="text-xs text-gray-400" id="dashTotalAwb">Memuat data...</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="refreshDashBtn" class="p-2 bg-white bg-opacity-10 rounded-full hover:bg-opacity-20 transition">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+                <button id="closeDashboardBtn" class="p-2 bg-red-500 bg-opacity-80 rounded-full hover:bg-opacity-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 bg-gray-100 rounded-2xl overflow-y-auto flex flex-col shadow-2xl p-4">
+            
+            <div class="grid grid-cols-1 gap-3">
+                <div class="bg-white p-3 rounded-xl shadow-sm">
+                    <h4 class="font-bold text-xs text-gray-800 mb-2 border-b border-gray-100 pb-1">SLA Target</h4>
+                    <div id="dashSlaList" class="space-y-1 max-h-40 overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="bg-white p-3 rounded-xl shadow-sm">
+                    <h4 class="font-bold text-xs text-gray-800 mb-2 border-b border-gray-100 pb-1">Destinasi UZ</h4>
+                    <div id="dashDestinasiList" class="max-h-64 overflow-auto rounded-lg"></div>
+                </div>
+
+                <div class="bg-white p-3 rounded-xl shadow-sm">
+                    <h4 class="font-bold text-xs text-gray-800 mb-2 border-b border-gray-100 pb-1">FOP Internal</h4>
+                    <div id="dashFopList" class="max-h-64 overflow-auto rounded-lg"></div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
     <!-- Modal Tabel Data -->
     <div id="dataTableModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex flex-col p-2 sm:p-6 backdrop-blur-sm">
         <div class="flex justify-between items-center mb-3 text-white px-2 mt-2">
@@ -112,6 +153,9 @@
                 <p class="text-xs text-gray-400" id="totalDataCount">Memuat...</p>
             </div>
             <div class="flex gap-2">
+                <button id="copyAwbBtn" class="p-2 bg-indigo-500 bg-opacity-80 rounded-full hover:bg-opacity-100 transition text-white" title="Salin AWB (FOP bukan opcode 80)">
+                    <i data-lucide="copy" class="w-5 h-5"></i>
+                </button>
                 <button id="refreshDataBtn" class="p-2 bg-white bg-opacity-10 rounded-full hover:bg-opacity-20 transition">
                     <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                 </button>
@@ -120,12 +164,19 @@
                 </button>
             </div>
         </div>
+
+        <div class="px-2 mb-3">
+            <select id="operatorFilter" class="w-full bg-indigo-50 border border-indigo-100 text-indigo-900 p-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <option value="">Semua Operator</option>
+            </select>
+        </div>
+
         <div class="flex-1 bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl">
             <div class="flex-1 overflow-auto">
                 <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
-                    <thead class="bg-indigo-50 sticky top-0 shadow-sm z-10">
+                    <thead class="bg-indigo-50 sticky top-0 shadow-sm z-20">
                         <tr>
-                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">No AWB</th>
+                            <th class="p-3 border-b border-r border-indigo-100 font-bold text-indigo-900 sticky left-0 bg-indigo-50 z-30">No AWB</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Kode Booking</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">SLA Target</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">FOP Internal</th>
@@ -171,13 +222,21 @@
         var lastScannedAwb = '';
         var isScannerOpen = false;
         var currentAdminAction = null;
+        var currentTableData = [];
+
+        var dashboardBtn = document.getElementById('dashboardBtn');
+        var dashboardModal = document.getElementById('dashboardModal');
+        var closeDashboardBtn = document.getElementById('closeDashboardBtn');
+        var refreshDashBtn = document.getElementById('refreshDashBtn');
 
         var viewDataBtn = document.getElementById('viewDataBtn');
         var dataTableModal = document.getElementById('dataTableModal');
         var closeDataTableBtn = document.getElementById('closeDataTableBtn');
         var refreshDataBtn = document.getElementById('refreshDataBtn');
+        var copyAwbBtn = document.getElementById('copyAwbBtn');
         var dataTableBody = document.getElementById('dataTableBody');
         var totalDataCount = document.getElementById('totalDataCount');
+        var operatorFilter = document.getElementById('operatorFilter');
 
         var uploadIconBtn = document.getElementById('uploadIconBtn');
         var deleteIconBtn = document.getElementById('deleteIconBtn');
@@ -215,7 +274,186 @@
             }
         }
 
-        // Fitur Modal Tabel Data
+        dashboardBtn.addEventListener('click', function() {
+            dashboardModal.classList.remove('hidden');
+            loadDashboardData();
+        });
+
+        closeDashboardBtn.addEventListener('click', function() {
+            dashboardModal.classList.add('hidden');
+        });
+
+        refreshDashBtn.addEventListener('click', loadDashboardData);
+
+        function sortObjectByValue(obj) {
+            var arr = [];
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    arr.push({ name: key, count: obj[key] });
+                }
+            }
+            arr.sort(function(a, b) { return b.count - a.count; });
+            return arr;
+        }
+
+        function renderDashboardList(elementId, dataArray, total) {
+            var html = '';
+            if (dataArray.length === 0) {
+                document.getElementById(elementId).innerHTML = '<p class="text-xs text-gray-500">Tidak ada data</p>';
+                return;
+            }
+            dataArray.forEach(function(item) {
+                var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                html += '<div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">' +
+                            '<span class="truncate pr-1 text-gray-700">' + item.name + '</span>' +
+                            '<span class="font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap">' + item.count + ' (' + pct + '%)</span>' +
+                        '</div>';
+            });
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        function renderSlaList(elementId, dataArray, total) {
+            var html = '';
+            var colors = ['text-red-700 bg-red-50', 'text-orange-700 bg-orange-50', 'text-yellow-700 bg-yellow-50', 'text-green-700 bg-green-50'];
+            dataArray.forEach(function(item, index) {
+                var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                var colorClass = colors[index] || 'text-gray-700 bg-gray-50';
+                html += '<div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">' +
+                            '<span class="truncate pr-1 text-gray-700">' + item.name + '</span>' +
+                            '<span class="font-bold px-1.5 py-0.5 rounded text-xs ' + colorClass + ' whitespace-nowrap">' + item.count + ' (' + pct + '%)</span>' +
+                        '</div>';
+            });
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        function renderMatrix(elementId, matrixData, rowKeys, colKeys) {
+            var html = '<table class="w-full text-left border-collapse text-xs whitespace-nowrap relative">';
+            
+            html += '<thead class="bg-indigo-50 sticky top-0 z-20 shadow-sm"><tr><th class="p-1 border-b border-r border-indigo-100 font-semibold text-gray-700 sticky left-0 bg-indigo-50 z-30">Nama</th>';
+            var colTotals = {};
+            colKeys.forEach(function(col) {
+                html += '<th class="p-1 border-b border-indigo-100 font-semibold text-center text-gray-700">' + col + '</th>';
+                colTotals[col] = 0;
+            });
+            html += '<th class="p-1 border-b border-indigo-100 font-bold text-center text-indigo-900 bg-indigo-100">Total</th>';
+            html += '</tr></thead><tbody>';
+
+            var grandTotal = 0;
+
+            rowKeys.forEach(function(row) {
+                html += '<tr class="border-b border-gray-50 last:border-0"><td class="p-1 text-gray-700 font-medium sticky left-0 bg-white border-r border-gray-50 z-10">' + row + '</td>';
+                var rowTotal = 0;
+                colKeys.forEach(function(col) {
+                    var val = matrixData[row][col] || 0;
+                    rowTotal += val;
+                    colTotals[col] += val;
+                    html += '<td class="p-1 text-center text-gray-600">' + val + '</td>';
+                });
+                grandTotal += rowTotal;
+                html += '<td class="p-1 text-center font-bold text-indigo-900 bg-indigo-50">' + rowTotal + '</td>';
+                html += '</tr>';
+            });
+
+            html += '<tr class="bg-indigo-100 border-t-2 border-indigo-200 sticky bottom-0 z-20"><td class="p-1 font-bold text-indigo-900 sticky left-0 bg-indigo-100 border-r border-indigo-200 z-30">Total</td>';
+            colKeys.forEach(function(col) {
+                html += '<td class="p-1 text-center font-bold text-indigo-900">' + colTotals[col] + '</td>';
+            });
+            html += '<td class="p-1 text-center font-black text-indigo-900">' + grandTotal + '</td></tr>';
+
+            html += '</tbody></table>';
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        function loadDashboardData() {
+            document.getElementById('dashTotalAwb').textContent = 'Memuat data dari server...';
+
+            fetch(supabaseUrl + '?select=*', {
+                method: 'GET',
+                headers: headers
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error("Gagal memuat data");
+                return response.json();
+            })
+            .then(function(data) {
+                var totalData = data.length;
+                document.getElementById('dashTotalAwb').textContent = 'Total ' + totalData + ' Resi Terdaftar';
+
+                var counts = {
+                    opFop: {},
+                    destFop: {},
+                    fopKeys: {},
+                    sla: { over: 0, lastDay: 0, sameday: 0, safe: 0 }
+                };
+
+                var today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                data.forEach(function(row) {
+                    var op = row.nama_operator_internal || 'N/A';
+                    var dest = row.destination_uz || 'N/A';
+                    var fop = row.fop_code_internal || 'N/A';
+
+                    counts.fopKeys[fop] = true;
+
+                    if (!counts.opFop[op]) counts.opFop[op] = {};
+                    counts.opFop[op][fop] = (counts.opFop[op][fop] || 0) + 1;
+
+                    if (!counts.destFop[dest]) counts.destFop[dest] = {};
+                    counts.destFop[dest][fop] = (counts.destFop[dest][fop] || 0) + 1;
+
+                    if (row.expect_delivery_tm) {
+                        var expectDate = new Date(row.expect_delivery_tm);
+                        expectDate.setHours(0, 0, 0, 0);
+                        var diffTime = expectDate - today;
+                        var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays < 0) {
+                            counts.sla.over++;
+                        } else if (diffDays === 0) {
+                            counts.sla.lastDay++;
+                        } else if (diffDays > 0 && diffDays <= 2) {
+                            counts.sla.sameday++;
+                        } else {
+                            counts.sla.safe++;
+                        }
+                    }
+                });
+
+                var slaArr = [
+                    { name: 'Over SLA', count: counts.sla.over },
+                    { name: 'Last Day', count: counts.sla.lastDay },
+                    { name: 'Sameday', count: counts.sla.sameday },
+                    { name: '> 2 Hari', count: counts.sla.safe }
+                ];
+
+                var fopHeaders = Object.keys(counts.fopKeys).sort();
+                
+                var opHeaders = Object.keys(counts.opFop).sort(function(a, b) {
+                    var totalA = 0;
+                    for (var colA in counts.opFop[a]) totalA += counts.opFop[a][colA];
+                    var totalB = 0;
+                    for (var colB in counts.opFop[b]) totalB += counts.opFop[b][colB];
+                    return totalB - totalA;
+                });
+                
+                var destHeaders = Object.keys(counts.destFop).sort(function(a, b) {
+                    var totalA = 0;
+                    for (var colA in counts.destFop[a]) totalA += counts.destFop[a][colA];
+                    var totalB = 0;
+                    for (var colB in counts.destFop[b]) totalB += counts.destFop[b][colB];
+                    return totalB - totalA;
+                });
+
+                renderSlaList('dashSlaList', slaArr, totalData);
+                renderMatrix('dashDestinasiList', counts.destFop, destHeaders, fopHeaders);
+                renderMatrix('dashFopList', counts.opFop, opHeaders, fopHeaders);
+            })
+            .catch(function(error) {
+                document.getElementById('dashTotalAwb').textContent = 'Gagal memuat data.';
+            });
+        }
+
         viewDataBtn.addEventListener('click', function() {
             dataTableModal.classList.remove('hidden');
             loadTableData();
@@ -227,12 +465,90 @@
 
         refreshDataBtn.addEventListener('click', loadTableData);
 
+        copyAwbBtn.addEventListener('click', function() {
+            var filteredAwbs = currentTableData
+                .filter(function(row) {
+                    var fop = row.fop_code_internal ? row.fop_code_internal.toLowerCase() : '';
+                    return fop !== 'opcode 80';
+                })
+                .map(function(row) {
+                    return row.awb_no;
+                });
+
+            if (filteredAwbs.length === 0) {
+                return;
+            }
+
+            var textToCopy = filteredAwbs.join('\n');
+            var textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                var originalHtml = copyAwbBtn.innerHTML;
+                copyAwbBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
+                copyAwbBtn.classList.remove('bg-indigo-500');
+                copyAwbBtn.classList.add('bg-green-500');
+                lucide.createIcons();
+                
+                setTimeout(function() {
+                    copyAwbBtn.innerHTML = originalHtml;
+                    copyAwbBtn.classList.remove('bg-green-500');
+                    copyAwbBtn.classList.add('bg-indigo-500');
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                console.error('Gagal menyalin');
+            }
+            
+            document.body.removeChild(textarea);
+        });
+
+        function renderTableRows(dataToRender) {
+            totalDataCount.textContent = 'Menampilkan ' + dataToRender.length + ' baris data';
+            
+            if (dataToRender.length === 0) {
+                dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500">Data tidak ditemukan.</td></tr>';
+                return;
+            }
+
+            var rows = '';
+            dataToRender.forEach(function(row) {
+                rows += '<tr class="group border-b border-gray-100 hover:bg-gray-50">' +
+                    '<td class="p-3 font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100 z-10 group-hover:bg-gray-50">' + row.awb_no + '</td>' +
+                    '<td class="p-3 text-gray-600">' + (row.kode_booking || '-') + '</td>' +
+                    '<td class="p-3 text-gray-600">' + (row.expect_delivery_tm || '-') + '</td>' +
+                    '<td class="p-3 text-gray-600">' + (row.fop_code_internal || '-') + '</td>' +
+                    '<td class="p-3 text-gray-600">' + (row.destination_uz || '-') + '</td>' +
+                    '<td class="p-3 text-gray-600">' + (row.nama_operator_internal || '-') + '</td>' +
+                '</tr>';
+            });
+            dataTableBody.innerHTML = rows;
+        }
+
+        operatorFilter.addEventListener('change', function() {
+            var selectedOp = this.value;
+            if (selectedOp === "") {
+                renderTableRows(currentTableData);
+            } else {
+                var filtered = currentTableData.filter(function(row) {
+                    var op = row.nama_operator_internal || 'Tidak Diketahui';
+                    return op === selectedOp;
+                });
+                renderTableRows(filtered);
+            }
+        });
+
         function loadTableData() {
             dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Memuat data dari server...</td></tr>';
             lucide.createIcons();
             totalDataCount.textContent = 'Memuat...';
+            operatorFilter.innerHTML = '<option value="">Semua Operator</option>';
+            operatorFilter.disabled = true;
 
-            fetch(supabaseUrl + '?select=*&limit=500', {
+            fetch(supabaseUrl + '?select=*', {
                 method: 'GET',
                 headers: headers
             })
@@ -241,32 +557,34 @@
                 return response.json();
             })
             .then(function(data) {
-                totalDataCount.textContent = 'Menampilkan ' + data.length + ' baris data terbaru';
-                
-                if (data.length === 0) {
-                    dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500">Database masih kosong.</td></tr>';
-                    return;
-                }
-
-                var rows = '';
-                data.forEach(function(row) {
-                    rows += '<tr class="border-b border-gray-100 hover:bg-gray-50">' +
-                        '<td class="p-3 font-semibold text-gray-900">' + row.awb_no + '</td>' +
-                        '<td class="p-3 text-gray-600">' + (row.kode_booking || '-') + '</td>' +
-                        '<td class="p-3 text-gray-600">' + (row.expect_delivery_tm || '-') + '</td>' +
-                        '<td class="p-3 text-gray-600">' + (row.fop_code_internal || '-') + '</td>' +
-                        '<td class="p-3 text-gray-600">' + (row.destination_uz || '-') + '</td>' +
-                        '<td class="p-3 text-gray-600">' + (row.nama_operator_internal || '-') + '</td>' +
-                    '</tr>';
+                data.sort(function(a, b) {
+                    var dateA = a.expect_delivery_tm ? new Date(a.expect_delivery_tm).getTime() : 9999999999999;
+                    var dateB = b.expect_delivery_tm ? new Date(b.expect_delivery_tm).getTime() : 9999999999999;
+                    return dateA - dateB;
                 });
-                dataTableBody.innerHTML = rows;
+
+                currentTableData = data;
+                
+                var ops = {};
+                data.forEach(function(row) {
+                    var op = row.nama_operator_internal || 'Tidak Diketahui';
+                    ops[op] = true;
+                });
+                
+                var opHtml = '<option value="">Semua Operator</option>';
+                Object.keys(ops).sort().forEach(function(op) {
+                    opHtml += '<option value="' + op + '">' + op + '</option>';
+                });
+                operatorFilter.innerHTML = opHtml;
+                operatorFilter.disabled = false;
+                
+                renderTableRows(data);
             })
             .catch(function(error) {
                 dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-red-500">Gagal terhubung ke database. Periksa koneksi internet Anda.</td></tr>';
             });
         }
 
-        // Fitur Modal Password
         function openPasswordModal(action) {
             currentAdminAction = action;
             modalPasswordInput.value = '';
@@ -342,7 +660,11 @@
                     showUploadAlert("Mengunggah data ke database. Mohon tunggu...", "process");
                     
                     var payload = results.data
-                        .filter(function(row) { return row.awb_no; })
+                        .filter(function(row) {
+                            if (!row.awb_no) return false;
+                            var fop = row.fop_code_internal ? row.fop_code_internal.toString().trim().toLowerCase() : '';
+                            return fop !== '80' && fop !== 'opcode 80';
+                        })
                         .map(function(row) {
                             return {
                                 awb_no: row.awb_no.trim(),
@@ -419,7 +741,6 @@
             }
         });
 
-        // Deteksi Scanner Fisik (USB/Bluetooth)
         var barcodeBuffer = '';
         var lastKeyTime = Date.now();
 
