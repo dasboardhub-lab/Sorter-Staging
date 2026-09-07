@@ -62,7 +62,8 @@
 
         <div class="p-5 flex-1 overflow-y-auto hide-scrollbar flex flex-col gap-4 relative pt-4 pb-10">
             
-            <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+            <!-- Ditambahkan atribut multiple agar bisa memilih banyak file -->
+            <input type="file" id="csvFileInput" accept=".csv" class="hidden" multiple>
             <div id="uploadAlert" class="hidden p-3 rounded-xl text-sm font-medium flex items-start gap-2">
                 <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
                 <span id="uploadStatus"></span>
@@ -125,6 +126,12 @@
         </div>
         <div class="flex-1 bg-gray-100 rounded-2xl overflow-y-auto flex flex-col shadow-2xl p-4">
             
+            <div class="mb-3">
+                <select id="dashStagingFilter" class="w-full bg-white border border-gray-200 text-gray-800 p-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-sm">
+                    <option value="">Semua Destinasi Staging</option>
+                </select>
+            </div>
+
             <div class="grid grid-cols-1 gap-3">
                 <div class="bg-white p-3 rounded-xl shadow-sm">
                     <h4 class="font-bold text-xs text-gray-800 mb-2 border-b border-gray-100 pb-1">SLA Target</h4>
@@ -165,9 +172,12 @@
             </div>
         </div>
 
-        <div class="px-2 mb-3">
-            <select id="operatorFilter" class="w-full bg-indigo-50 border border-indigo-100 text-indigo-900 p-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        <div class="px-2 mb-3 flex gap-2">
+            <select id="operatorFilter" class="flex-1 bg-indigo-50 border border-indigo-100 text-indigo-900 p-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition">
                 <option value="">Semua Operator</option>
+            </select>
+            <select id="stagingFilter" class="flex-1 bg-indigo-50 border border-indigo-100 text-indigo-900 p-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <option value="">Semua Staging</option>
             </select>
         </div>
 
@@ -181,6 +191,7 @@
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">SLA Target</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">FOP Internal</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Destinasi UZ</th>
+                            <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Destinasi Staging</th>
                             <th class="p-3 border-b border-indigo-100 font-bold text-indigo-900">Operator</th>
                         </tr>
                     </thead>
@@ -237,6 +248,9 @@
         var dataTableBody = document.getElementById('dataTableBody');
         var totalDataCount = document.getElementById('totalDataCount');
         var operatorFilter = document.getElementById('operatorFilter');
+        var stagingFilter = document.getElementById('stagingFilter');
+        var dashStagingFilter = document.getElementById('dashStagingFilter');
+        var currentDashboardData = [];
 
         var uploadIconBtn = document.getElementById('uploadIconBtn');
         var deleteIconBtn = document.getElementById('deleteIconBtn');
@@ -399,85 +413,119 @@
 
         function loadDashboardData() {
             document.getElementById('dashTotalAwb').textContent = 'Memuat data dari server...';
+            dashStagingFilter.innerHTML = '<option value="">Semua Destinasi Staging</option>';
+            dashStagingFilter.disabled = true;
 
             fetchAllData()
             .then(function(data) {
-                var totalData = data.length;
-                document.getElementById('dashTotalAwb').textContent = 'Total ' + totalData + ' Resi Terdaftar';
-
-                var counts = {
-                    opFop: {},
-                    destFop: {},
-                    fopKeys: {},
-                    sla: { over: 0, lastDay: 0, sameday: 0, safe: 0 }
-                };
-
-                var today = new Date();
-                today.setHours(0, 0, 0, 0);
-
+                currentDashboardData = data;
+                
+                var stagings = {};
                 data.forEach(function(row) {
-                    var op = row.nama_operator_internal || 'N/A';
-                    var dest = row.destination_uz || 'N/A';
-                    var fop = row.fop_code_internal || 'N/A';
-
-                    counts.fopKeys[fop] = true;
-
-                    if (!counts.opFop[op]) counts.opFop[op] = {};
-                    counts.opFop[op][fop] = (counts.opFop[op][fop] || 0) + 1;
-
-                    if (!counts.destFop[dest]) counts.destFop[dest] = {};
-                    counts.destFop[dest][fop] = (counts.destFop[dest][fop] || 0) + 1;
-
-                    if (row.expect_delivery_tm) {
-                        var expectDate = new Date(row.expect_delivery_tm);
-                        expectDate.setHours(0, 0, 0, 0);
-                        var diffTime = expectDate - today;
-                        var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                        if (diffDays < 0) {
-                            counts.sla.over++;
-                        } else if (diffDays === 0) {
-                            counts.sla.lastDay++;
-                        } else if (diffDays > 0 && diffDays <= 2) {
-                            counts.sla.sameday++;
-                        } else {
-                            counts.sla.safe++;
-                        }
-                    }
-                });
-
-                var slaArr = [
-                    { name: 'Over SLA', count: counts.sla.over },
-                    { name: 'Last Day', count: counts.sla.lastDay },
-                    { name: 'Sameday', count: counts.sla.sameday },
-                    { name: '> 2 Hari', count: counts.sla.safe }
-                ];
-
-                var fopHeaders = Object.keys(counts.fopKeys).sort();
-                
-                var opHeaders = Object.keys(counts.opFop).sort(function(a, b) {
-                    var totalA = 0;
-                    for (var colA in counts.opFop[a]) totalA += counts.opFop[a][colA];
-                    var totalB = 0;
-                    for (var colB in counts.opFop[b]) totalB += counts.opFop[b][colB];
-                    return totalB - totalA;
+                    var staging = row.destination_staging || 'Tidak Diketahui';
+                    stagings[staging] = true;
                 });
                 
-                var destHeaders = Object.keys(counts.destFop).sort(function(a, b) {
-                    var totalA = 0;
-                    for (var colA in counts.destFop[a]) totalA += counts.destFop[a][colA];
-                    var totalB = 0;
-                    for (var colB in counts.destFop[b]) totalB += counts.destFop[b][colB];
-                    return totalB - totalA;
+                var stagingHtml = '<option value="">Semua Destinasi Staging</option>';
+                Object.keys(stagings).sort().forEach(function(stg) {
+                    stagingHtml += '<option value="' + stg + '">' + stg + '</option>';
                 });
+                dashStagingFilter.innerHTML = stagingHtml;
+                dashStagingFilter.disabled = false;
 
-                renderSlaList('dashSlaList', slaArr, totalData);
-                renderMatrix('dashDestinasiList', counts.destFop, destHeaders, fopHeaders);
-                renderMatrix('dashFopList', counts.opFop, opHeaders, fopHeaders);
+                processDashboardStats(data);
             })
             .catch(function(error) {
                 document.getElementById('dashTotalAwb').textContent = 'Gagal memuat data.';
             });
+        }
+
+        dashStagingFilter.addEventListener('change', function() {
+            var selectedStaging = this.value;
+            if (selectedStaging === "") {
+                processDashboardStats(currentDashboardData);
+            } else {
+                var filtered = currentDashboardData.filter(function(row) {
+                    var staging = row.destination_staging || 'Tidak Diketahui';
+                    return staging === selectedStaging;
+                });
+                processDashboardStats(filtered);
+            }
+        });
+
+        function processDashboardStats(data) {
+            var totalData = data.length;
+            document.getElementById('dashTotalAwb').textContent = 'Total ' + totalData + ' Resi Terdaftar';
+
+            var counts = {
+                opFop: {},
+                destFop: {},
+                fopKeys: {},
+                sla: { over: 0, lastDay: 0, sameday: 0, safe: 0 }
+            };
+
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            data.forEach(function(row) {
+                var op = row.nama_operator_internal || 'N/A';
+                var dest = row.destination_uz || 'N/A';
+                var fop = row.fop_code_internal || 'N/A';
+
+                counts.fopKeys[fop] = true;
+
+                if (!counts.opFop[op]) counts.opFop[op] = {};
+                counts.opFop[op][fop] = (counts.opFop[op][fop] || 0) + 1;
+
+                if (!counts.destFop[dest]) counts.destFop[dest] = {};
+                counts.destFop[dest][fop] = (counts.destFop[dest][fop] || 0) + 1;
+
+                if (row.expect_delivery_tm) {
+                    var expectDate = new Date(row.expect_delivery_tm);
+                    expectDate.setHours(0, 0, 0, 0);
+                    var diffTime = expectDate - today;
+                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 0) {
+                        counts.sla.over++;
+                    } else if (diffDays === 0) {
+                        counts.sla.lastDay++;
+                    } else if (diffDays > 0 && diffDays <= 2) {
+                        counts.sla.sameday++;
+                    } else {
+                        counts.sla.safe++;
+                    }
+                }
+            });
+
+            var slaArr = [
+                { name: 'Over SLA', count: counts.sla.over },
+                { name: 'Last Day', count: counts.sla.lastDay },
+                { name: 'Sameday', count: counts.sla.sameday },
+                { name: '> 2 Hari', count: counts.sla.safe }
+            ];
+
+            var fopHeaders = Object.keys(counts.fopKeys).sort();
+            
+            var opHeaders = Object.keys(counts.opFop).sort(function(a, b) {
+                var totalA = 0;
+                for (var colA in counts.opFop[a]) totalA += counts.opFop[a][colA];
+                var totalB = 0;
+                for (var colB in counts.opFop[b]) totalB += counts.opFop[b][colB];
+                return totalB - totalA;
+            });
+            
+            var destHeaders = Object.keys(counts.destFop).sort(function(a, b) {
+                var totalA = 0;
+                for (var colA in counts.destFop[a]) totalA += counts.destFop[a][colA];
+                var totalB = 0;
+                for (var colB in counts.destFop[b]) totalB += counts.destFop[b][colB];
+                return totalB - totalA;
+            });
+
+            renderSlaList('dashSlaList', slaArr, totalData);
+            renderMatrix('dashDestinasiList', counts.destFop, destHeaders, fopHeaders);
+            renderMatrix('dashFopList', counts.opFop, opHeaders, fopHeaders);
         }
 
         viewDataBtn.addEventListener('click', function() {
@@ -564,24 +612,31 @@
                     '<td class="' + textClass + '">' + (row.expect_delivery_tm || '-') + '</td>' +
                     '<td class="' + textClass + '">' + (row.fop_code_internal || '-') + '</td>' +
                     '<td class="' + textClass + '">' + (row.destination_uz || '-') + '</td>' +
+                    '<td class="' + textClass + '">' + (row.destination_staging || '-') + '</td>' +
                     '<td class="' + textClass + '">' + (row.nama_operator_internal || '-') + '</td>' +
                 '</tr>';
             });
             dataTableBody.innerHTML = rows;
         }
 
-        operatorFilter.addEventListener('change', function() {
-            var selectedOp = this.value;
-            if (selectedOp === "") {
-                renderTableRows(currentTableData);
-            } else {
-                var filtered = currentTableData.filter(function(row) {
-                    var op = row.nama_operator_internal || 'Tidak Diketahui';
-                    return op === selectedOp;
-                });
-                renderTableRows(filtered);
-            }
-        });
+        function applyTableFilters() {
+            var selectedOp = operatorFilter.value;
+            var selectedStaging = stagingFilter.value;
+            
+            var filtered = currentTableData.filter(function(row) {
+                var op = row.nama_operator_internal || 'Tidak Diketahui';
+                var staging = row.destination_staging || 'Tidak Diketahui';
+                
+                var matchOp = selectedOp === "" || op === selectedOp;
+                var matchStaging = selectedStaging === "" || staging === selectedStaging;
+                
+                return matchOp && matchStaging;
+            });
+            renderTableRows(filtered);
+        }
+
+        operatorFilter.addEventListener('change', applyTableFilters);
+        stagingFilter.addEventListener('change', applyTableFilters);
 
         function loadTableData() {
             dataTableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-500"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Memuat data dari server...</td></tr>';
@@ -601,9 +656,12 @@
                 currentTableData = data;
                 
                 var ops = {};
+                var stagings = {};
                 data.forEach(function(row) {
                     var op = row.nama_operator_internal || 'Tidak Diketahui';
+                    var staging = row.destination_staging || 'Tidak Diketahui';
                     ops[op] = true;
+                    stagings[staging] = true;
                 });
                 
                 var opHtml = '<option value="">Semua Operator</option>';
@@ -612,6 +670,13 @@
                 });
                 operatorFilter.innerHTML = opHtml;
                 operatorFilter.disabled = false;
+                
+                var stagingHtml = '<option value="">Semua Staging</option>';
+                Object.keys(stagings).sort().forEach(function(stg) {
+                    stagingHtml += '<option value="' + stg + '">' + stg + '</option>';
+                });
+                stagingFilter.innerHTML = stagingHtml;
+                stagingFilter.disabled = false;
                 
                 renderTableRows(data);
             })
@@ -681,51 +746,68 @@
             }
         });
 
+        // Diperbarui untuk mendukung multiple files dan penyesuaian header baru
         csvFileInput.addEventListener('change', function(event) {
-            var file = event.target.files[0];
-            if (!file) return;
+            var files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            showUploadAlert("Membaca file CSV...", "process");
+            showUploadAlert("Membaca " + files.length + " file CSV...", "process");
             
-            Papa.parse(file, {
-                header: true,
-                delimiter: "|", 
-                skipEmptyLines: true,
-                complete: function(results) {
-                    showUploadAlert("Mengunggah data ke database. Mohon tunggu...", "process");
-                    
-                    var payload = results.data
-                        .filter(function(row) {
-                            if (!row.awb_no) return false;
-                            var fop = row.fop_code_internal ? row.fop_code_internal.toString().trim().toLowerCase().replace('opcode ', '') : '';
-                            return fop !== '80' && fop !== '55' && fop !== '33' && fop !== '603' && fop !== '604';
-                        })
-                        .map(function(row) {
-                            return {
-                                awb_no: row.awb_no.trim(),
-                                kode_booking: row.kode_booking ? row.kode_booking.trim() : '',
-                                fop_code_internal: row.fop_code_internal || '',
-                                destination_uz: row.destination_uz || '',
-                                expect_delivery_tm: row.expect_delivery_tm || '',
-                                nama_operator_internal: row.nama_operator_internal || ''
-                            };
-                        });
+            var allPayloads = [];
+            var filesProcessed = 0;
 
-                    uploadDataKeSupabase(payload)
-                        .then(function() {
-                            showUploadAlert("Berhasil menyimpan " + payload.length + " data.", "success");
-                            csvFileInput.value = '';
-                        })
-                        .catch(function(error) {
-                            showUploadAlert("Gagal: " + error.message, "error");
-                            csvFileInput.value = '';
-                        });
-                },
-                error: function() {
-                    showUploadAlert("Gagal membaca file CSV.", "error");
-                    csvFileInput.value = '';
-                }
-            });
+            for (var i = 0; i < files.length; i++) {
+                Papa.parse(files[i], {
+                    header: true,
+                    // Menghapus delimiter: "|" agar PapaParse otomatis mendeteksi pemisah (koma atau pipa)
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        var payload = results.data
+                            .filter(function(row) {
+                                // Penyesuaian nama kolom baru: awb
+                                if (!row.awb) return false;
+                                
+                                // Penyesuaian nama kolom baru untuk FOP: latest_op_code
+                                var fop = row.latest_op_code ? row.latest_op_code.toString().trim().toLowerCase().replace('opcode ', '') : '';
+                                return fop !== '80' && fop !== '55' && fop !== '33' && fop !== '603' && fop !== '604';
+                            })
+                            .map(function(row) {
+                                // Pemetaan dari header CSV baru ke database
+                                return {
+                                    awb_no: row.awb ? row.awb.trim() : '',
+                                    kode_booking: row.booking_id ? row.booking_id.trim() : '',
+                                    fop_code_internal: row.latest_op_code || '',
+                                    destination_uz: row.destination_uz || '',
+                                    destination_staging: row.destination_staging || '',
+                                    expect_delivery_tm: row.expect_delivery_tm || '',
+                                    nama_operator_internal: row.latest_opcode_jabatan || ''
+                                };
+                            });
+                        
+                        allPayloads = allPayloads.concat(payload);
+                        filesProcessed++;
+
+                        // Jika semua file sudah selesai diproses, kirim ke database
+                        if (filesProcessed === files.length) {
+                            showUploadAlert("Mengunggah " + allPayloads.length + " data dari " + files.length + " file ke database...", "process");
+                            
+                            uploadDataKeSupabase(allPayloads)
+                                .then(function() {
+                                    showUploadAlert("Berhasil menyimpan " + allPayloads.length + " data.", "success");
+                                    csvFileInput.value = '';
+                                })
+                                .catch(function(error) {
+                                    showUploadAlert("Gagal: " + error.message, "error");
+                                    csvFileInput.value = '';
+                                });
+                        }
+                    },
+                    error: function() {
+                        showUploadAlert("Gagal membaca salah satu file CSV.", "error");
+                        csvFileInput.value = '';
+                    }
+                });
+            }
         });
 
         function uploadDataKeSupabase(dataArray) {
@@ -984,6 +1066,7 @@
                 var targetKirim = data.expect_delivery_tm ? data.expect_delivery_tm : '-';
                 var fopInternal = data.fop_code_internal ? data.fop_code_internal : '-';
                 var destUz = data.destination_uz ? data.destination_uz : '-';
+                var destStaging = data.destination_staging ? data.destination_staging : '-';
                 var operator = data.nama_operator_internal ? data.nama_operator_internal : '-';
 
                 resultContent.innerHTML = 
@@ -1002,9 +1085,13 @@
                         '</div>' +
                     '</div>' +
                     '<div class="grid grid-cols-2 gap-3">' +
-                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm col-span-2">' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">' +
                             '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Destinasi UZ</p>' +
                             '<p class="font-bold text-gray-800">' + destUz + '</p>' +
+                        '</div>' +
+                        '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">' +
+                            '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Destinasi Staging</p>' +
+                            '<p class="font-bold text-gray-800">' + destStaging + '</p>' +
                         '</div>' +
                         '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">' +
                             '<p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Target Kirim</p>' +
